@@ -12,6 +12,7 @@ enum Error {
 
     // crate errors
     NoProjectProvided,
+    InvalidNumberOfArgs,
 }
 
 impl core::fmt::Display for Error {
@@ -20,6 +21,7 @@ impl core::fmt::Display for Error {
             Self::IoError(_err) => write!(fmt, "{self:?}"),
             Self::StdVarError(_err) => write!(fmt, "{self:?}"),
             Self::NoProjectProvided => write!(fmt, "No project name provided"),
+            Self::InvalidNumberOfArgs => write!(fmt, "One argument is expected"),
         }
     }
 }
@@ -40,33 +42,44 @@ impl From<std::env::VarError> for Error {
 type Result<T> = core::result::Result<T, Error>;
 
 fn main() -> Result<()> {
-    let pattern = std::env::args()
-        .nth(1)
-        .ok_or_else(|| Error::NoProjectProvided)?;
+    let mut args = std::env::args();
+    if args.len() > 2 {
+        // 2 because of args obj format
+        return Err(Error::InvalidNumberOfArgs);
+    };
+
 
     let profile_path = std::env::var("userprofile")?;
     let projs_home_dir = Path::new(&profile_path).join("Projects");
-
-    let checked_proj_path = check_path_exits(&projs_home_dir)?;
     let ignore_dir = projs_home_dir.join("deploys");
 
+    let checked_proj_path = check_path_exits(&projs_home_dir)?;
     let all_projs = get_projs(&checked_proj_path, &ignore_dir)?;
 
-    for proj in &all_projs {
-        let matching_project = proj.path().ends_with(&pattern);
-        if matching_project {
-            println!("Opening project {}", proj.path().display());
-            
-            let _ = std::env::set_current_dir(proj.path());
+    let pattern = args.nth(1).ok_or_else(|| Error::NoProjectProvided)?;
 
-            let mut nvim_process = Command::new("nvim");
-            nvim_process.arg(".");
-            nvim_process.status()?;
-            return Ok(());
-        }
+    let list_command = { pattern == "-l" || pattern == "--list" };
+    if list_command {
+        println!("Available projects");
+        println!("{all_projs:#?}");
     }
-    println!("No matching projects found. Only below projects are available");
-    println!("{all_projs:#?}");
+    else {
+        for proj in &all_projs {
+            let matching_project = proj.path().ends_with(&pattern);
+            if matching_project {
+                println!("Opening project {}", proj.path().display());
+
+                let _ = std::env::set_current_dir(proj.path());
+
+                let mut nvim_process = Command::new("nvim");
+                nvim_process.arg(".");
+                nvim_process.status()?;
+                std::process::exit(0);
+            }
+        }
+        println!("No matching projects found. Only below projects are available");
+        println!("{all_projs:#?}");
+    }
 
     Ok(())
 }
