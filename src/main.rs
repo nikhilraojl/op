@@ -1,3 +1,4 @@
+use std::env::consts::OS;
 use std::{
     path::{Path, PathBuf},
     process::Command,
@@ -15,6 +16,7 @@ enum Error {
     NoProjectsFound,
     InvalidNumberOfArgs,
     InvalidArg,
+    UnSupportedOS,
 }
 
 impl core::fmt::Display for Error {
@@ -26,6 +28,7 @@ impl core::fmt::Display for Error {
             Self::InvalidNumberOfArgs => write!(fmt, "One argument is expected"),
             Self::InvalidArg => write!(fmt, "Invalid argument"),
             Self::NoProjectsFound => write!(fmt, "No Projects found"),
+            Self::UnSupportedOS => write!(fmt, "Current OS is unsupported"),
         }
     }
 }
@@ -52,7 +55,7 @@ fn main() -> Result<()> {
         return Err(Error::InvalidNumberOfArgs);
     };
 
-    let profile_path = std::env::var("userprofile")?;
+    let profile_path = get_profile_path()?;
     let projs_home_dir = Path::new(&profile_path).join("Projects");
     let ignore_dir = projs_home_dir.join("deploys");
 
@@ -68,6 +71,16 @@ fn main() -> Result<()> {
     }
 
     Ok(())
+}
+
+fn get_profile_path() -> Result<String> {
+    println!("Getting here {}", OS);
+    match OS {
+        "windows" => Ok(std::env::var("userprofile")?),
+        "linux" => Ok(std::env::var("HOME")?),
+        _ => Err(Error::UnSupportedOS),
+    }
+
 }
 
 fn check_path_exits(proj_path: &PathBuf) -> std::io::Result<&PathBuf> {
@@ -133,3 +146,4 @@ fn catch_empty_project_list(all_projs: &Vec<DirEntry>) -> Result<()> {
         Ok(())
     }
 }
+
