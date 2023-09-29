@@ -1,52 +1,15 @@
+mod error;
+mod projects;
+
+use console::{Key, Term};
+use error::{Error, Result};
+use projects::Projects;
 use std::env::consts::OS;
 use std::{
     path::{Path, PathBuf},
     process::Command,
 };
-use walkdir::{DirEntry, WalkDir};
-
-#[derive(Debug)]
-enum Error {
-    //std errors
-    IoError(std::io::Error),
-    StdVarError(std::env::VarError),
-
-    // crate errors
-    NoArgProvided,
-    NoProjectsFound,
-    InvalidNumberOfArgs,
-    InvalidArg,
-    UnSupportedOS,
-}
-
-impl core::fmt::Display for Error {
-    fn fmt(&self, fmt: &mut std::fmt::Formatter) -> core::result::Result<(), core::fmt::Error> {
-        match self {
-            Self::IoError(_err) => write!(fmt, "{self:?}"),
-            Self::StdVarError(_err) => write!(fmt, "{self:?}"),
-            Self::NoArgProvided => write!(fmt, "No argument provided"),
-            Self::InvalidNumberOfArgs => write!(fmt, "One argument is expected"),
-            Self::InvalidArg => write!(fmt, "Invalid argument"),
-            Self::NoProjectsFound => write!(fmt, "No Projects found"),
-            Self::UnSupportedOS => write!(fmt, "Current OS is unsupported"),
-        }
-    }
-}
-
-impl std::error::Error for Error {}
-impl From<std::io::Error> for Error {
-    fn from(err: std::io::Error) -> Self {
-        Self::IoError(err)
-    }
-}
-
-impl From<std::env::VarError> for Error {
-    fn from(err: std::env::VarError) -> Self {
-        Self::StdVarError(err)
-    }
-}
-
-type Result<T> = core::result::Result<T, Error>;
+use walkdir::DirEntry;
 
 fn main() -> Result<()> {
     let mut args = std::env::args();
@@ -59,31 +22,63 @@ fn main() -> Result<()> {
     let projs_home_dir = Path::new(&profile_path).join("Projects");
     let ignore_dir = projs_home_dir.join("deploys");
 
-    let checked_proj_path = check_path_exits(&projs_home_dir)?;
-    let all_projs = get_projs(&checked_proj_path, &ignore_dir)?;
+    let checked_proj_path = check_path_exits(projs_home_dir)?;
 
-    let arg = args.nth(1).ok_or_else(|| Error::NoArgProvided)?;
+    let mut filter_string = String::new();
+    if args.len() == 1 {
+        let mut projects = Projects::new(checked_proj_path, ignore_dir, true)?;
+        let term = Term::stdout();
+        term.hide_cursor()?;
+        println!("{projects}");
+        'main: loop {
+            let read_key = term.read_key().unwrap();
+            if read_key == Key::ArrowUp {
+                projects.select_previous();
+                filter_print(&mut projects, None, &term)?;
+            }
+            if read_key == Key::ArrowDown {
+                projects.select_next();
+                filter_print(&mut projects, None, &term)?;
+            }
 
-    if arg.starts_with("--") | arg.starts_with("-") {
-        process_arg_command(&arg, &all_projs)?;
+            if let Key::Char(ch) = read_key {
+                filter_string.push(ch);
+                filter_print(&mut projects, Some(&filter_string), &term)?;
+            }
+            if read_key == Key::Backspace {
+                if !filter_string.is_empty() {
+                    filter_string.pop();
+                }
+                filter_print(&mut projects, Some(&filter_string), &term)?;
+            }
+            if read_key == Key::Enter {
+                select_project(&mut projects)?;
+                break 'main;
+            }
+        }
     } else {
-        open_project_in_nvim(&arg, &all_projs)?;
+        let projects = Projects::new(checked_proj_path, ignore_dir, false)?;
+        let arg = args.nth(1).ok_or_else(|| Error::NoArgProvided)?;
+
+        if arg.starts_with("--") | arg.starts_with("-") {
+            process_arg_command(&arg, &projects)?;
+        } else {
+            open_project_in_nvim(&arg, &projects)?;
+        }
     }
 
     Ok(())
 }
 
 fn get_profile_path() -> Result<String> {
-    println!("Getting here {}", OS);
     match OS {
         "windows" => Ok(std::env::var("userprofile")?),
         "linux" => Ok(std::env::var("HOME")?),
         _ => Err(Error::UnSupportedOS),
     }
-
 }
 
-fn check_path_exits(proj_path: &PathBuf) -> std::io::Result<&PathBuf> {
+fn check_path_exits(proj_path: PathBuf) -> std::io::Result<PathBuf> {
     let checked_proj_path = proj_path.try_exists()?;
     if checked_proj_path {
         Ok(proj_path)
@@ -96,46 +91,68 @@ fn check_path_exits(proj_path: &PathBuf) -> std::io::Result<&PathBuf> {
     }
 }
 
-fn get_projs(path: &PathBuf, ignore_dir: &PathBuf) -> std::io::Result<Vec<DirEntry>> {
-    let mut projs_vec = Vec::<DirEntry>::new();
-    for entry in WalkDir::new(path).max_depth(2) {
-        let entry = entry?;
-        if entry.depth() == 2 && !entry.path().starts_with(ignore_dir) {
-            projs_vec.push(entry);
-        }
+fn filter_print(
+    projects: &mut Projects,
+    filter_string: Option<&String>,
+    term: &Term,
+) -> Result<()> {
+    term.clear_to_end_of_screen()?;
+    term.clear_last_lines(projects.filtered_items.len())?;
+    if let Some(filter_string) = filter_string {
+        term.clear_last_lines(1)?;
+        println!("Find: {filter_string}");
+        projects.filter_project_list(filter_string)?;
     }
-    return Ok(projs_vec);
+    print_projects(projects);
+    Ok(())
 }
 
-fn process_arg_command(command: &str, all_projs: &Vec<DirEntry>) -> Result<()> {
-    catch_empty_project_list(all_projs)?;
+fn print_projects(projects: &mut Projects) {
+    if projects.filtered_items.len() > 0 {
+        println!("{projects}");
+    }
+}
+
+fn process_arg_command(command: &str, all_projs: &Projects) -> Result<()> {
+    catch_empty_project_list(&all_projs.filtered_items)?;
     match command {
         "-l" | "--list" => {
-            println!("Available projects");
-            println!("{all_projs:#?}");
+            println!("Available projects:\n");
+            println!("{all_projs}");
             Ok(())
         }
         _ => Err(Error::InvalidArg),
     }
 }
 
-fn open_project_in_nvim(project_name: &str, all_projs: &Vec<DirEntry>) -> Result<()> {
-    catch_empty_project_list(all_projs)?;
-    for proj in all_projs {
+fn open_project_in_nvim(project_name: &str, all_projs: &Projects) -> Result<()> {
+    catch_empty_project_list(&all_projs.filtered_items)?;
+    for proj in &all_projs.filtered_items {
         let matching_project = proj.path().ends_with(project_name);
         if matching_project {
-            println!("Opening project {}", proj.path().display());
+            println!("Opening project {:?}", proj.file_name());
 
             let _ = std::env::set_current_dir(proj.path());
 
             let mut nvim_process = Command::new("nvim");
             nvim_process.arg(".");
             nvim_process.status()?;
+            println!("Closing project {:?}", proj.file_name());
             std::process::exit(0);
         }
     }
     println!("No matching projects found. Only below projects are available");
-    println!("{all_projs:#?}");
+    println!("{all_projs}");
+    Ok(())
+}
+
+fn select_project(projects: &mut Projects) -> Result<()> {
+    catch_empty_project_list(&projects.filtered_items)?;
+    let project = projects.filtered_items.get(projects.selected);
+    if let Some(project) = project {
+        let name = project.file_name().to_str().unwrap();
+        open_project_in_nvim(name, &projects)?;
+    }
     Ok(())
 }
 
@@ -146,4 +163,3 @@ fn catch_empty_project_list(all_projs: &Vec<DirEntry>) -> Result<()> {
         Ok(())
     }
 }
-
