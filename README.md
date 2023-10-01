@@ -1,5 +1,4 @@
-A simple program written in rust to open projects in neovim.
-Works on both windows and linux.
+A simple program written in rust to open projects in neovim. Works on both windows and linux.
 
 ![](./media/op_nvim.png)
 
