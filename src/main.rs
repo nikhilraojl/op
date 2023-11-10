@@ -11,6 +11,12 @@ use std::{
 };
 use walkdir::DirEntry;
 
+enum ArgAction {
+    ListProjects,
+    SwitchWorkDir,
+    OpenProject,
+}
+
 fn main() -> Result<()> {
     let mut args = std::env::args();
     if args.len() > 2 {
@@ -60,10 +66,15 @@ fn main() -> Result<()> {
         let projects = Projects::new(checked_proj_path, ignore_dir, false)?;
         let arg = args.nth(1).ok_or_else(|| Error::NoArgProvided)?;
 
-        if arg.starts_with("--") | arg.starts_with("-") {
-            process_arg_command(&arg, &projects)?;
-        } else {
-            open_project_in_nvim(&arg, &projects)?;
+        // if arg.starts_with("--") | arg.starts_with("-") {
+        // let x = process_arg_command(&arg, &projects)?;
+        match process_arg_command(&arg, &projects)? {
+            ArgAction::OpenProject => open_project_in_nvim(&arg, &projects)?,
+            ArgAction::ListProjects => {
+                println!("Available projects:\n");
+                println!("{}", &projects);
+            }
+            ArgAction::SwitchWorkDir => switch_work_dir(&arg, &projects)?,
         }
     }
 
@@ -113,37 +124,59 @@ fn print_projects(projects: &mut Projects) {
     }
 }
 
-fn process_arg_command(command: &str, all_projs: &Projects) -> Result<()> {
+fn process_arg_command(arg: &str, all_projs: &Projects) -> Result<ArgAction> {
     catch_empty_project_list(&all_projs.filtered_items)?;
-    match command {
-        "-l" | "--list" => {
-            println!("Available projects:\n");
-            println!("{all_projs}");
-            Ok(())
+    if arg.starts_with("--") | arg.starts_with("-") {
+        match arg {
+            "-l" | "--list" => Ok(ArgAction::ListProjects),
+            "-w" | "--workdir" => Ok(ArgAction::SwitchWorkDir),
+            _ => Err(Error::InvalidArg),
         }
-        _ => Err(Error::InvalidArg),
+    } else {
+        Ok(ArgAction::OpenProject)
     }
 }
 
 fn open_project_in_nvim(project_name: &str, all_projs: &Projects) -> Result<()> {
-    catch_empty_project_list(&all_projs.filtered_items)?;
+    if let Some(proj) = matching_project(project_name, all_projs) {
+        println!("Opening project {:?}", proj.file_name());
+
+        // TODO: Handle Result here
+        let _ = std::env::set_current_dir(proj.path());
+
+        let mut nvim_process = Command::new("nvim");
+        nvim_process.arg(".");
+        nvim_process.status()?;
+        println!("Closing project {:?}", proj.file_name());
+        std::process::exit(0);
+    } else {
+        println!("No matching projects found. Only below projects are available");
+        println!("{all_projs}");
+        Ok(())
+    }
+}
+
+fn switch_work_dir(project_name: &str, all_projs: &Projects) -> Result<()> {
+    if let Some(proj) = matching_project(project_name, all_projs) {
+        let mut pwsh = Command::new("pwsh");
+        pwsh.arg("-c");
+        pwsh.arg(format!("cd {:?}", proj.path()));
+        pwsh.status()?;
+        Ok(())
+    } else {
+        println!("No matching projects found. Couldn't switch to project dir'");
+        Ok(())
+    }
+}
+
+fn matching_project<'a>(project_name: &str, all_projs: &'a Projects) -> Option<&'a DirEntry> {
     for proj in &all_projs.filtered_items {
         let matching_project = proj.path().ends_with(project_name);
         if matching_project {
-            println!("Opening project {:?}", proj.file_name());
-
-            let _ = std::env::set_current_dir(proj.path());
-
-            let mut nvim_process = Command::new("nvim");
-            nvim_process.arg(".");
-            nvim_process.status()?;
-            println!("Closing project {:?}", proj.file_name());
-            std::process::exit(0);
+            return Some(proj);
         }
     }
-    println!("No matching projects found. Only below projects are available");
-    println!("{all_projs}");
-    Ok(())
+    return None;
 }
 
 fn select_project(projects: &mut Projects) -> Result<()> {
