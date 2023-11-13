@@ -5,6 +5,7 @@ use console::{Key, Term};
 use error::{Error, Result};
 use projects::Projects;
 use std::env::consts::OS;
+use std::env::Args;
 use std::{
     path::{Path, PathBuf},
     process::Command,
@@ -13,14 +14,15 @@ use walkdir::DirEntry;
 
 enum ArgAction {
     ListProjects,
-    SwitchWorkDir,
-    OpenProject,
+    // SwitchWorkDir(String),
+    PrintPath(String),
+    OpenProject(String),
 }
 
 fn main() -> Result<()> {
     let mut args = std::env::args();
-    if args.len() > 2 {
-        // 2 because of args obj format
+    if args.len() > 3 {
+        // 3 first arg is program path
         return Err(Error::InvalidNumberOfArgs);
     };
 
@@ -64,17 +66,14 @@ fn main() -> Result<()> {
         }
     } else {
         let projects = Projects::new(checked_proj_path, ignore_dir, false)?;
-        let arg = args.nth(1).ok_or_else(|| Error::NoArgProvided)?;
 
-        // if arg.starts_with("--") | arg.starts_with("-") {
-        // let x = process_arg_command(&arg, &projects)?;
-        match process_arg_command(&arg, &projects)? {
-            ArgAction::OpenProject => open_project_in_nvim(&arg, &projects)?,
+        match process_arg_command(&mut args, &projects)? {
+            ArgAction::OpenProject(arg) => open_project_in_nvim(&arg, &projects)?,
             ArgAction::ListProjects => {
                 println!("Available projects:\n");
                 println!("{}", &projects);
             }
-            ArgAction::SwitchWorkDir => switch_work_dir(&arg, &projects)?,
+            ArgAction::PrintPath(arg) => print_work_dir(&arg, &projects)?,
         }
     }
 
@@ -124,25 +123,51 @@ fn print_projects(projects: &mut Projects) {
     }
 }
 
-fn process_arg_command(arg: &str, all_projs: &Projects) -> Result<ArgAction> {
+fn process_arg_command(args: &mut Args, all_projs: &Projects) -> Result<ArgAction> {
     catch_empty_project_list(&all_projs.filtered_items)?;
-    if arg.starts_with("--") | arg.starts_with("-") {
-        match arg {
-            "-l" | "--list" => Ok(ArgAction::ListProjects),
-            "-w" | "--workdir" => Ok(ArgAction::SwitchWorkDir),
-            _ => Err(Error::InvalidArg),
-        }
+
+    // first arg is program path and hence ignored
+    args.next();
+
+    // we need to have an initial arg to process it
+    let arg = args.next().ok_or_else(|| Error::NoArgProvided)?;
+
+    if check_valid_flag(&arg, "list")? {
+        return Ok(ArgAction::ListProjects);
     } else {
-        Ok(ArgAction::OpenProject)
+        // The `arg` is now expected to be a path to a project
+        // The `next_arg` is expected to be any additional flags
+        if let Some(next_arg) = args.next() {
+            if check_valid_flag(&next_arg, "print")? {
+                return Ok(ArgAction::PrintPath(arg));
+            } else {
+                return Err(Error::InvalidArg);
+            }
+        } else {
+            return Ok(ArgAction::OpenProject(arg));
+        }
     }
+}
+
+fn check_valid_flag(arg: &String, flag_name: &str) -> Result<bool> {
+    // infers long and short form of flag
+    // flag_name = "test"
+    // long: --test
+    // short: -t
+    let mut short = "-".to_owned();
+    let mut long = "--".to_owned();
+    let short_notation = flag_name.chars().nth(0).ok_or(Error::InvalidArg)?;
+    short.push(short_notation);
+    long.push_str(flag_name);
+
+    Ok(arg.starts_with(&short) || arg.starts_with(&long))
 }
 
 fn open_project_in_nvim(project_name: &str, all_projs: &Projects) -> Result<()> {
     if let Some(proj) = matching_project(project_name, all_projs) {
         println!("Opening project {:?}", proj.file_name());
 
-        // TODO: Handle Result here
-        let _ = std::env::set_current_dir(proj.path());
+        std::env::set_current_dir(proj.path())?;
 
         let mut nvim_process = Command::new("nvim");
         nvim_process.arg(".");
@@ -156,12 +181,9 @@ fn open_project_in_nvim(project_name: &str, all_projs: &Projects) -> Result<()> 
     }
 }
 
-fn switch_work_dir(project_name: &str, all_projs: &Projects) -> Result<()> {
+fn print_work_dir(project_name: &str, all_projs: &Projects) -> Result<()> {
     if let Some(proj) = matching_project(project_name, all_projs) {
-        let mut pwsh = Command::new("pwsh");
-        pwsh.arg("-c");
-        pwsh.arg(format!("cd {:?}", proj.path()));
-        pwsh.status()?;
+        println!("{}", proj.path().display());
         Ok(())
     } else {
         println!("No matching projects found. Couldn't switch to project dir'");
@@ -183,7 +205,10 @@ fn select_project(projects: &mut Projects) -> Result<()> {
     catch_empty_project_list(&projects.filtered_items)?;
     let project = projects.filtered_items.get(projects.selected);
     if let Some(project) = project {
-        let name = project.file_name().to_str().unwrap();
+        let name = project
+            .file_name()
+            .to_str()
+            .ok_or_else(|| Error::NoProjectsFound)?;
         open_project_in_nvim(name, &projects)?;
     }
     Ok(())

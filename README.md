@@ -21,9 +21,13 @@ Check projects present
 op [--list|-l]
 ```
 
-If can also directly open the project
+If can also directly open the project or print full path using `--print` or `-p` flag
 ```
-op [project_name]
+op [project_name] <--print|-p>
+```
+The output of `--print` or `-p` can be used to pipe in a shell. To change directory to a project
+```
+op test_proj -p | cd 
 ```
 
 For auto complete you can add the below script to your powershell profile
