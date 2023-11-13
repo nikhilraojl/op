@@ -1,9 +1,9 @@
-A simple program written in rust to open projects in neovim. Works on both windows and linux.
+A simple program written in rust to quickly open projects in neovim. Works on both windows and linux.
 
 ![](./media/op_nvim.png)
 
 ## Run
-Below is the layout expected for this program to run. 
+Below is the layout expected for this program to run. Only "project" level in the layout is detected by this program
 ```
 home
     |-Projects
@@ -14,18 +14,17 @@ home
             |- project
             |- project 
 ```
-Only projects are in the layout are detected by this program.
 
-Check projects present
+To list all the projects
 ```
 op [--list|-l]
 ```
 
-If can also directly open the project or print full path using `--print` or `-p` flag
+To directly open the project in nvim
 ```
-op [project_name] <--print|-p>
+op [project_name]
 ```
-The output of `--print` or `-p` can be used to pipe in a shell. To change directory to a project
+or print full path of the project using `--print` or `-p` flag. The output of `--print` or `-p` can be used to pipe in a shell
 ```
 op test_proj -p | cd 
 ```
@@ -42,10 +41,11 @@ $opCommandCompletion = {
 
     $items
 }
+
+Register-ArgumentCompleter -Native -CommandName op -ScriptBlock $opCommandCompletion
 ```
 
 ## Build
-- Requirements: rustc, cargo(you can have both by installing `rustup`)
-- clone the repo
-- `cargo build --release --target_dir="somewhere/in/path"`
-
+- requirements: rustc, cargo(you can have both by installing `rustup`), neovim
+- clone the repo and cd into it
+- run `cargo build --release --target_dir="somewhere/in/path"`
