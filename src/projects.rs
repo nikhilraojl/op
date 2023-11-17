@@ -1,4 +1,5 @@
-use std::fmt::Display;
+use console::Term;
+use std::{fmt::Display, process::Command};
 use std::path::PathBuf;
 use walkdir::{DirEntry, WalkDir};
 
@@ -59,6 +60,62 @@ impl Projects {
         self.select_initial();
         Ok(())
     }
+    pub fn print_projects(&self) {
+        if self.filtered_items.len() > 0 {
+            println!("{}", self);
+        }
+    }
+    pub fn filter_print(
+        &mut self,
+        filter_string: Option<&String>,
+        term: &Term,
+    ) -> Result<()> {
+        term.clear_to_end_of_screen()?;
+        term.clear_last_lines(self.filtered_items.len())?;
+        if let Some(filter_string) = filter_string {
+            term.clear_last_lines(1)?;
+            println!("Find: {filter_string}");
+            self.filter_project_list(filter_string)?;
+        }
+        self.print_projects();
+        Ok(())
+    }
+    pub fn matching_project(&self, project_name: &str) -> Option<&DirEntry> {
+        for proj in &self.filtered_items {
+            let matching_project = proj.path().ends_with(project_name);
+            if matching_project {
+                return Some(proj);
+            }
+        }
+        return None;
+    }
+
+    pub fn open_project_in_nvim(&self, project_name: &str) -> Result<()> {
+        if let Some(proj) = self.matching_project(project_name) {
+            println!("Opening project {:?}", proj.file_name());
+
+            std::env::set_current_dir(proj.path())?;
+
+            let mut nvim_process = Command::new("nvim");
+            nvim_process.arg(".");
+            nvim_process.status()?;
+            println!("Closing project {:?}", proj.file_name());
+            std::process::exit(0);
+        } else {
+            println!("No matching projects found. Only below projects are available");
+            println!("{self}");
+            Ok(())
+        }
+    }
+
+    pub fn print_work_dir(&self, project_name: &str) {
+        if let Some(proj) = self.matching_project(project_name) {
+            println!("{}", proj.path().display());
+        } else {
+            println!("No matching projects found. Couldn't switch to project dir'");
+        }
+    }
+
 }
 
 impl Display for Projects {
