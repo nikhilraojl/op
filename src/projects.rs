@@ -76,6 +76,6 @@ impl Display for Projects {
                 output.push('\n');
             }
         }
-        write!(f, "{}", output)
+        write!(f, "{output}")
     }
 }

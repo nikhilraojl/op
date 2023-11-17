@@ -12,19 +12,46 @@ use std::{
 };
 use walkdir::DirEntry;
 
-enum ArgAction {
-    ListProjects,
-    // SwitchWorkDir(String),
-    PrintPath(String),
-    OpenProject(String),
+#[derive(Default, Debug)]
+struct ListArgs {
+    list: bool,
+    help: bool,
 }
 
-fn main() -> Result<()> {
+impl ListArgs {
+    fn print_help(&self) {
+        println!("op --list|-l : Prints all available projects to stdout");
+    }
+}
+
+#[derive(Debug)]
+struct OpArgs {
+    proj_name: String,
+    print_path: bool,
+    help: bool,
+}
+
+impl OpArgs {
+    fn print_help(&self) {
+        println!("Try to use one of the below commands \n");
+        println!("op <project_name>            : Opens project directly in neovim");
+        println!("op <project_name> --print|-p : Prints project path to stdout");
+    }
+}
+
+enum ArgAction {
+    ListAllProjects(ListArgs),
+    OpenProject(OpArgs),
+}
+
+fn main() {
+    if let Err(err) = run() {
+        println!("{err}");
+    }
+}
+
+fn run() -> Result<()> {
     let mut args = std::env::args();
-    if args.len() > 3 {
-        // 3 first arg is program path
-        return Err(Error::InvalidNumberOfArgs);
-    };
 
     let profile_path = get_profile_path()?;
     let projs_home_dir = Path::new(&profile_path).join("Projects");
@@ -68,12 +95,8 @@ fn main() -> Result<()> {
         let projects = Projects::new(checked_proj_path, ignore_dir, false)?;
 
         match process_arg_command(&mut args, &projects)? {
-            ArgAction::OpenProject(arg) => open_project_in_nvim(&arg, &projects)?,
-            ArgAction::ListProjects => {
-                println!("Available projects:\n");
-                println!("{}", &projects);
-            }
-            ArgAction::PrintPath(arg) => print_work_dir(&arg, &projects)?,
+            ArgAction::OpenProject(args) => op_project(&args, &projects)?,
+            ArgAction::ListAllProjects(args) => list_all_projects(&args, &projects),
         }
     }
 
@@ -132,20 +155,30 @@ fn process_arg_command(args: &mut Args, all_projs: &Projects) -> Result<ArgActio
     // we need to have an initial arg to process it
     let arg = args.next().ok_or_else(|| Error::NoArgProvided)?;
 
-    if check_valid_flag(&arg, "list")? {
-        return Ok(ArgAction::ListProjects);
-    } else {
-        // The `arg` is now expected to be a path to a project
-        // The `next_arg` is expected to be any additional flags
+    if arg.starts_with("--") || arg.starts_with("-") {
+        // we go the ListAllProjects route
+        let mut list_args = ListArgs::default();
+        list_args.list = check_valid_flag(&arg, "list")?;
         if let Some(next_arg) = args.next() {
-            if check_valid_flag(&next_arg, "print")? {
-                return Ok(ArgAction::PrintPath(arg));
-            } else {
-                return Err(Error::InvalidArg);
-            }
-        } else {
-            return Ok(ArgAction::OpenProject(arg));
+            list_args.help = check_valid_flag(&next_arg, "help")?;
         }
+        check_no_next_arg(args)?;
+        return Ok(ArgAction::ListAllProjects(list_args));
+    } else {
+        // we go the OpenProject route
+        let mut op_args = OpArgs {
+            proj_name: arg.clone(),
+            print_path: false,
+            help: false,
+        };
+        if let Some(next_arg) = args.next() {
+            op_args.print_path = check_valid_flag(&next_arg, "print")?;
+        }
+        if let Some(next_arg) = args.next() {
+            op_args.help = check_valid_flag(&next_arg, "help")?;
+        }
+        check_no_next_arg(args)?;
+        return Ok(ArgAction::OpenProject(op_args));
     }
 }
 
@@ -156,11 +189,30 @@ fn check_valid_flag(arg: &String, flag_name: &str) -> Result<bool> {
     // short: -t
     let mut short = "-".to_owned();
     let mut long = "--".to_owned();
-    let short_notation = flag_name.chars().nth(0).ok_or(Error::InvalidArg)?;
+    let short_notation = flag_name.chars().nth(0).ok_or(Error::InvalidArgs)?;
     short.push(short_notation);
     long.push_str(flag_name);
 
-    Ok(arg.starts_with(&short) || arg.starts_with(&long))
+    if arg == &short || arg == &long {
+        return Ok(true);
+    }
+    return Err(Error::InvalidArgs);
+}
+
+fn check_no_next_arg(args: &mut Args) -> Result<()> {
+    if args.next().is_some() {
+        return Err(Error::InvalidArgs);
+    }
+    Ok(())
+}
+
+fn list_all_projects(args: &ListArgs, projects: &Projects) {
+    if args.help {
+        args.print_help();
+    } else {
+        println!("Available projects:\n");
+        println!("{}", projects);
+    }
 }
 
 fn open_project_in_nvim(project_name: &str, all_projs: &Projects) -> Result<()> {
@@ -181,14 +233,23 @@ fn open_project_in_nvim(project_name: &str, all_projs: &Projects) -> Result<()> 
     }
 }
 
-fn print_work_dir(project_name: &str, all_projs: &Projects) -> Result<()> {
+fn print_work_dir(project_name: &str, all_projs: &Projects) {
     if let Some(proj) = matching_project(project_name, all_projs) {
         println!("{}", proj.path().display());
-        Ok(())
     } else {
         println!("No matching projects found. Couldn't switch to project dir'");
-        Ok(())
     }
+}
+
+fn op_project(args: &OpArgs, projects: &Projects) -> Result<()> {
+    if args.help {
+        args.print_help();
+    } else if args.print_path {
+        print_work_dir(&args.proj_name, &projects);
+    } else {
+        open_project_in_nvim(&args.proj_name, &projects)?
+    }
+    Ok(())
 }
 
 fn matching_project<'a>(project_name: &str, all_projs: &'a Projects) -> Option<&'a DirEntry> {

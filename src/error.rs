@@ -7,20 +7,21 @@ pub enum Error {
     // crate errors
     NoArgProvided,
     NoProjectsFound,
-    InvalidNumberOfArgs,
-    InvalidArg,
+    InvalidArgs,
     UnSupportedOS,
 }
 
-impl core::fmt::Display for Error {
-    fn fmt(&self, fmt: &mut std::fmt::Formatter) -> core::result::Result<(), core::fmt::Error> {
+impl std::fmt::Display for Error {
+    fn fmt(&self, fmt: &mut std::fmt::Formatter) -> std::result::Result<(), std::fmt::Error> {
         match self {
             Self::IoError(_err) => write!(fmt, "{self:?}"),
             Self::StdVarError(_err) => write!(fmt, "{self:?}"),
             Self::NoArgProvided => write!(fmt, "No argument provided"),
-            Self::InvalidNumberOfArgs => write!(fmt, "One argument is expected"),
-            Self::InvalidArg => write!(fmt, "Invalid argument"),
-            Self::NoProjectsFound => write!(fmt, "No Projects found"),
+            Self::InvalidArgs => write!(
+                fmt,
+                "Invalid argument(s) provided. Try running command with --help flag"
+            ),
+            Self::NoProjectsFound => write!(fmt, "No Projects found with the specified name"),
             Self::UnSupportedOS => write!(fmt, "Current OS is unsupported"),
         }
     }
@@ -39,4 +40,4 @@ impl From<std::env::VarError> for Error {
     }
 }
 
-pub type Result<T> = core::result::Result<T, Error>;
+pub type Result<T> = std::result::Result<T, Error>;
