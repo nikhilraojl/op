@@ -1,6 +1,6 @@
 use std::env::Args;
 use std::path::PathBuf;
-use std::env::consts::OS;
+use std::{env::consts::OS, iter::Peekable};
 use walkdir::DirEntry;
 
 use crate::error::{Error, Result};
@@ -16,17 +16,19 @@ pub fn check_valid_flag(arg: &String, flag_name: &str) -> Result<bool> {
     short.push(short_notation);
     long.push_str(flag_name);
 
-    if arg == &short || arg == &long {
-        return Ok(true);
-    }
-    return Err(Error::InvalidArgs);
+    return Ok(arg == &short || arg == &long);
 }
 
-pub fn check_no_next_arg(args: &mut Args) -> Result<()> {
-    if args.next().is_some() {
-        return Err(Error::InvalidArgs);
+pub fn check_help_flag(arg: &String, args: &mut Args) -> Result<bool> {
+    let help_flag = check_valid_flag(arg, "help")?;
+    if help_flag {
+        if args.next().is_some() {
+            // there should be no args after --help flag
+            return Err(Error::InvalidArgs);
+        }
+        return Ok(help_flag);
     }
-    Ok(())
+    return Err(Error::InvalidArgs);
 }
 
 pub fn catch_empty_project_list(all_projs: &Vec<DirEntry>) -> Result<()> {

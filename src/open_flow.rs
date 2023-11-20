@@ -2,13 +2,13 @@ use crate::error::Result;
 use crate::projects::Projects;
 
 #[derive(Debug)]
-pub struct OpArgs {
+pub struct OpAction {
     pub proj_name: String,
     pub print_path: bool,
     pub help: bool,
 }
 
-impl OpArgs {
+impl OpAction {
     pub fn print_help(&self) {
         println!("Try to use one of the below commands \n");
         println!("op <project_name>            : Opens project directly in neovim");
