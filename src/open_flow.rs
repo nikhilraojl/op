@@ -1,7 +1,7 @@
 use crate::error::Result;
 use crate::projects::Projects;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct OpAction {
     pub proj_name: String,
     pub print_path: bool,

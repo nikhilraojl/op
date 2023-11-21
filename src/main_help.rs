@@ -1,4 +1,5 @@
 
+#[derive(Debug, PartialEq)]
 pub struct MainHelpAction;
 impl MainHelpAction {
     pub fn print_help(&self) {

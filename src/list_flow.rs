@@ -1,7 +1,7 @@
 use crate::projects::Projects;
 use crate::error::Result;
 
-#[derive(Default)]
+#[derive(Default, Debug, PartialEq)]
 pub struct ListAction {
     pub help: bool,
 }

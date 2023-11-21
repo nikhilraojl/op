@@ -48,4 +48,5 @@ Register-ArgumentCompleter -Native -CommandName op -ScriptBlock $opCommandComple
 ## Build
 - requirements: rustc, cargo(you can have both by installing `rustup`), neovim
 - clone the repo and cd into it
-- run `cargo build --release --target_dir="somewhere/in/path"`
+- `cargo test` for running tests
+- run `cargo build --release --target_dir="somewhere/in/path"` to build and use binary

@@ -1,6 +1,5 @@
-use std::env::Args;
-use std::path::PathBuf;
 use std::env::consts::OS;
+use std::path::PathBuf;
 use walkdir::DirEntry;
 
 use crate::error::{Error, Result};
@@ -19,7 +18,7 @@ pub fn check_valid_flag(arg: &String, flag_name: &str) -> Result<bool> {
     return Ok(arg == &short || arg == &long);
 }
 
-pub fn check_help_flag(arg: &String, args: &mut Args) -> Result<bool> {
+pub fn check_help_flag<T: Iterator<Item = String>>(arg: &String, args: &mut T) -> Result<bool> {
     let help_flag = check_valid_flag(arg, "help")?;
     if help_flag {
         if args.next().is_some() {

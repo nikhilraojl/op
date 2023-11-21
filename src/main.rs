@@ -13,11 +13,11 @@ use open_flow::OpAction;
 use projects::Projects;
 use select_flow::render_loop;
 use std::path::Path;
-use std::env::Args;
 use utils::{
     catch_empty_project_list, check_help_flag, check_path_exits, check_valid_flag, get_profile_path,
 };
 
+#[derive(Debug, PartialEq)]
 enum ArgAction {
     ListAllProjects(ListAction),
     OpenProject(OpAction),
@@ -43,9 +43,13 @@ fn run() -> Result<()> {
         let mut projects = Projects::new(checked_proj_path, ignore_dir, true)?;
         render_loop(&mut projects)?;
     } else {
-        let projects = Projects::new(checked_proj_path, ignore_dir, false)?;
+        // first arg is generally the program path and hence skipped here
+        args.next();
 
-        let action_to_perform = process_arg_command(&mut args, &projects)?;
+        let projects = Projects::new(checked_proj_path, ignore_dir, false)?;
+        catch_empty_project_list(&projects.filtered_items)?;
+
+        let action_to_perform = process_arg_command(&mut args)?;
         match action_to_perform {
             ArgAction::MainHelp(action) => action.print_help(),
             ArgAction::OpenProject(action) => action.perform_action(&projects)?,
@@ -56,12 +60,7 @@ fn run() -> Result<()> {
     Ok(())
 }
 
-fn process_arg_command(args: &mut Args, all_projs: &Projects) -> Result<ArgAction> {
-    catch_empty_project_list(&all_projs.filtered_items)?;
-
-    // first arg is program path and hence ignored
-    args.next();
-
+fn process_arg_command<T: Iterator<Item = String>>(args: &mut T) -> Result<ArgAction> {
     // we need to have an initial arg to process it
     let arg = args.next().ok_or_else(|| Error::NoArgProvided)?;
 
@@ -97,5 +96,111 @@ fn process_arg_command(args: &mut Args, all_projs: &Projects) -> Result<ArgActio
         }
 
         return Ok(ArgAction::OpenProject(op_args));
+    }
+}
+
+#[test]
+fn test_process_main_help_action() {
+    // main action
+    let mut args = ["--help".to_owned()].into_iter();
+    let act = process_arg_command(&mut args).unwrap();
+    let exp = ArgAction::MainHelp(MainHelpAction);
+    assert_eq!(act, exp);
+}
+
+#[test]
+fn test_process_list_action() {
+    // --list
+    let mut args = ["--list".to_owned()].into_iter();
+    let act = process_arg_command(&mut args).unwrap();
+    let exp = ArgAction::ListAllProjects(ListAction::default());
+    assert_eq!(act, exp);
+
+    // --list --help
+    let mut args = ["--list".to_owned(), "--help".to_owned()].into_iter();
+    let act = process_arg_command(&mut args).unwrap();
+    let list_args = ListAction { help: true };
+    let exp = ArgAction::ListAllProjects(list_args);
+    assert_eq!(act, exp);
+
+    // --list --help
+    let mut args = ["--list".to_owned(), "--help".to_owned(), "x".to_owned()].into_iter();
+    match process_arg_command(&mut args) {
+        Ok(_) => assert!(false),
+        Err(_) => assert!(true),
+    }
+}
+
+#[test]
+fn test_process_open_action() {
+    // lapce
+    let mut args = ["lapce".to_owned()].into_iter();
+    let act = process_arg_command(&mut args).unwrap();
+    let op_args = OpAction {
+        proj_name: "lapce".to_owned(),
+        print_path: false,
+        help: false,
+    };
+    let _exp = ArgAction::OpenProject(op_args);
+    assert_eq!(act, _exp);
+
+    // lapce --help
+    let mut args = ["lapce".to_owned(), "--help".to_owned()].into_iter();
+    let act = process_arg_command(&mut args).unwrap();
+    let op_args = OpAction {
+        proj_name: "lapce".to_owned(),
+        print_path: false,
+        help: true,
+    };
+    let exp = ArgAction::OpenProject(op_args);
+    assert_eq!(act, exp);
+
+    // lapce --help x
+    let mut args = ["lapce".to_owned(), "--help".to_owned(), "x".to_owned()].into_iter();
+    match process_arg_command(&mut args) {
+        Ok(_) => assert!(false),
+        Err(_) => assert!(true),
+    }
+}
+
+#[test]
+fn test_process_open_action_print() {
+    // lapce --print
+    let mut args = ["lapce".to_owned(), "--print".to_owned()].into_iter();
+    let act = process_arg_command(&mut args).unwrap();
+    let op_args = OpAction {
+        proj_name: "lapce".to_owned(),
+        print_path: true,
+        help: false,
+    };
+    let exp = ArgAction::OpenProject(op_args);
+    assert_eq!(act, exp);
+
+    // lapce --print --help
+    let mut args = [
+        "lapce".to_owned(),
+        "--print".to_owned(),
+        "--help".to_owned(),
+    ]
+    .into_iter();
+    let act = process_arg_command(&mut args).unwrap();
+    let op_args = OpAction {
+        proj_name: "lapce".to_owned(),
+        print_path: true,
+        help: true,
+    };
+    let exp = ArgAction::OpenProject(op_args);
+    assert_eq!(act, exp);
+
+    // lapce --help --print
+    let mut args = [
+        "lapce".to_owned(),
+        "--help".to_owned(),
+        "--print".to_owned(),
+    ]
+    .into_iter();
+    match process_arg_command(&mut args) {
+        Ok(_) => assert!(false),
+        Err(_) => assert!(true),
     }
 }
