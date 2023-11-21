@@ -13,7 +13,7 @@ use open_flow::OpAction;
 use projects::Projects;
 use select_flow::render_loop;
 use std::path::Path;
-use std::{env::Args, iter::Peekable};
+use std::env::Args;
 use utils::{
     catch_empty_project_list, check_help_flag, check_path_exits, check_valid_flag, get_profile_path,
 };

@@ -1,6 +1,6 @@
 use std::env::Args;
 use std::path::PathBuf;
-use std::{env::consts::OS, iter::Peekable};
+use std::env::consts::OS;
 use walkdir::DirEntry;
 
 use crate::error::{Error, Result};
