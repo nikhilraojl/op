@@ -1,8 +1,14 @@
 use std::env::consts::OS;
 use std::path::PathBuf;
 use walkdir::DirEntry;
+use crate::projects::Projects;
 
 use crate::error::{Error, Result};
+
+pub trait ActionTrait {
+    fn print_help(&self);
+    fn execute(&self, projects: &Projects) -> Result<()>;
+}
 
 pub fn check_valid_flag(arg: &String, flag_name: &str) -> Result<bool> {
     // infers long and short form of flag

@@ -13,6 +13,7 @@ use open_flow::OpAction;
 use projects::Projects;
 use select_flow::render_loop;
 use std::path::Path;
+use utils::ActionTrait;
 use utils::{
     catch_empty_project_list, check_help_flag, check_path_exits, check_valid_flag, get_profile_path,
 };
@@ -51,9 +52,9 @@ fn run() -> Result<()> {
 
         let action_to_perform = process_arg_command(&mut args)?;
         match action_to_perform {
-            ArgAction::MainHelp(action) => action.print_help(),
-            ArgAction::OpenProject(action) => action.perform_action(&projects)?,
-            ArgAction::ListAllProjects(action) => action.perform_action(&projects)?,
+            ArgAction::MainHelp(action) => action.execute(&projects)?,
+            ArgAction::OpenProject(action) => action.execute(&projects)?,
+            ArgAction::ListAllProjects(action) => action.execute(&projects)?,
         }
     }
 

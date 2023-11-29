@@ -1,6 +1,6 @@
 use console::Term;
-use std::{fmt::Display, process::Command};
 use std::path::PathBuf;
+use std::{fmt::Display, process::Command};
 use walkdir::{DirEntry, WalkDir};
 
 use crate::Result;
@@ -28,8 +28,8 @@ impl Projects {
         let dir_items = Self::get_list(&project_path, &ignore_path)?;
         let projects = Self {
             selected: 0,
-            dir_items: dir_items.clone(),
             filtered_items: dir_items.clone(),
+            dir_items,
             no_arg,
         };
         Ok(projects)
@@ -47,8 +47,9 @@ impl Projects {
             self.selected -= 1;
         }
     }
-    pub fn filter_project_list(&mut self, filter_string: &String) -> Result<()> {
-        self.filtered_items = self
+    pub fn filter_project_list(&mut self, filter_string: &String) -> Vec<DirEntry> {
+        self.select_initial();
+        return self
             .dir_items
             .clone()
             .into_iter()
@@ -57,27 +58,18 @@ impl Projects {
                 x.starts_with(filter_string)
             })
             .collect();
-        self.select_initial();
-        Ok(())
     }
-    pub fn print_projects(&self) {
-        if self.filtered_items.len() > 0 {
-            println!("{}", self);
-        }
-    }
-    pub fn filter_print(
-        &mut self,
-        filter_string: Option<&String>,
-        term: &Term,
-    ) -> Result<()> {
+    pub fn filter_print(&mut self, filter_string: Option<&String>, term: &Term) -> Result<()> {
         term.clear_to_end_of_screen()?;
         term.clear_last_lines(self.filtered_items.len())?;
         if let Some(filter_string) = filter_string {
             term.clear_last_lines(1)?;
             println!("Find: {filter_string}");
-            self.filter_project_list(filter_string)?;
+            self.filtered_items = self.filter_project_list(filter_string);
         }
-        self.print_projects();
+        if self.filtered_items.len() > 0 {
+            println!("{}", self);
+        }
         Ok(())
     }
     pub fn matching_project(&self, project_name: &str) -> Option<&DirEntry> {
@@ -115,7 +107,6 @@ impl Projects {
             println!("No matching projects found. Couldn't switch to project dir'");
         }
     }
-
 }
 
 impl Display for Projects {
