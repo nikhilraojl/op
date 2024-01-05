@@ -1,5 +1,5 @@
-use crate::{utils::ActionTrait, projects::Projects};
 use crate::error::Result;
+use crate::{projects::Projects, utils::ActionTrait};
 
 #[derive(Debug, PartialEq)]
 pub struct MainHelpAction;

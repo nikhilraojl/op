@@ -12,11 +12,8 @@ use main_help::MainHelpAction;
 use open_flow::OpAction;
 use projects::Projects;
 use select_flow::render_loop;
-use std::path::Path;
 use utils::ActionTrait;
-use utils::{
-    catch_empty_project_list, check_help_flag, check_path_exits, check_valid_flag, get_profile_path,
-};
+use utils::{catch_empty_project_list, check_help_flag, check_valid_flag, get_project_path};
 
 #[derive(Debug, PartialEq)]
 enum ArgAction {
@@ -34,20 +31,17 @@ fn main() {
 fn run() -> Result<()> {
     let mut args = std::env::args();
 
-    let profile_path = get_profile_path()?;
-    let projs_home_dir = Path::new(&profile_path).join("Projects");
-    let ignore_dir = projs_home_dir.join("deploys");
-
-    let checked_proj_path = check_path_exits(projs_home_dir)?;
+    let proj_path = get_project_path()?;
+    let ignore_dir = proj_path.join("deploys");
 
     if args.len() == 1 {
-        let mut projects = Projects::new(checked_proj_path, ignore_dir, true)?;
+        let mut projects = Projects::new(proj_path, ignore_dir, true)?;
         render_loop(&mut projects)?;
     } else {
         // first arg is generally the program path and hence skipped here
         args.next();
 
-        let projects = Projects::new(checked_proj_path, ignore_dir, false)?;
+        let projects = Projects::new(proj_path, ignore_dir, false)?;
         catch_empty_project_list(&projects.filtered_items)?;
 
         let action_to_perform = process_arg_command(&mut args)?;

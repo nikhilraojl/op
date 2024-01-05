@@ -1,7 +1,7 @@
-use std::env::consts::OS;
-use std::path::PathBuf;
-use walkdir::DirEntry;
 use crate::projects::Projects;
+use std::env::consts::OS;
+use std::path::{Path, PathBuf};
+use walkdir::DirEntry;
 
 use crate::error::{Error, Result};
 
@@ -44,20 +44,25 @@ pub fn catch_empty_project_list(all_projs: &Vec<DirEntry>) -> Result<()> {
     }
 }
 
-pub fn check_path_exits(proj_path: PathBuf) -> std::io::Result<PathBuf> {
-    let checked_proj_path = proj_path.try_exists()?;
-    if checked_proj_path {
-        Ok(proj_path)
+pub fn get_project_path() -> Result<PathBuf> {
+    let profile_path = get_profile_path()?;
+    let proj_dir_1 = Path::new(&profile_path).join("Projects");
+    let proj_dir_2 = Path::new(&profile_path).join("projects");
+
+    if proj_dir_1.try_exists()? {
+        Ok(proj_dir_1)
+    } else if proj_dir_2.try_exists()? {
+        Ok(proj_dir_2)
     } else {
         let e = std::io::Error::new(
             std::io::ErrorKind::NotFound,
-            format!("{} cannot be found", proj_path.display()),
+            format!("{} cannot be found", proj_dir_2.display()),
         );
-        Err(e)
+        Err(Error::IoError(e))
     }
 }
 
-pub fn get_profile_path() -> Result<String> {
+fn get_profile_path() -> Result<String> {
     match OS {
         "windows" => Ok(std::env::var("userprofile")?),
         "linux" => Ok(std::env::var("HOME")?),
