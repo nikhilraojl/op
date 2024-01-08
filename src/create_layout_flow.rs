@@ -34,12 +34,14 @@ op --create|-c : Creates Projects->language layout in home directory
         } else {
             for lang in &self.lang_types {
                 let path = projects.project_path.join(lang);
-                DirBuilder::new().recursive(true).create(path)?;
+                if path.exists() {
+                    println!("'{}' directory exists. Skipping", lang);
+                } else {
+                    println!("Creating {:?} directory", lang);
+                    DirBuilder::new().recursive(true).create(path)?;
+                }
             }
-            println!(
-                "Created Project layout with languages {:?}",
-                self.lang_types
-            );
+            println!("Done");
         }
         Ok(())
     }

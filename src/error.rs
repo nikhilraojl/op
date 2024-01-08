@@ -21,7 +21,9 @@ impl std::fmt::Display for Error {
                 fmt,
                 "Invalid argument(s) provided. Try running command with --help flag"
             ),
-            Self::NoProjectsFound => write!(fmt, "No Projects found with the specified name"),
+            Self::NoProjectsFound => {
+                write!(fmt, "No Project(s) found. Check README for more details")
+            }
             Self::UnSupportedOS => write!(fmt, "Current OS is unsupported"),
         }
     }

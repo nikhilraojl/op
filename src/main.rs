@@ -32,20 +32,20 @@ fn main() {
 }
 
 fn run() -> Result<()> {
-    let mut args = std::env::args();
-
     let proj_path = get_project_path()?;
     let ignore_dir = proj_path.join("deploys");
 
+    let mut args = std::env::args();
+
     if args.len() == 1 {
         let mut projects = Projects::new(proj_path, ignore_dir, true)?;
+        catch_empty_project_list(&projects.filtered_items)?;
         render_loop(&mut projects)?;
     } else {
         // first arg is generally the program path and hence skipped here
         args.next();
 
         let projects = Projects::new(proj_path, ignore_dir, false)?;
-        catch_empty_project_list(&projects.filtered_items)?;
 
         let action_to_perform = process_arg_command(&mut args)?;
         match action_to_perform {
