@@ -6,6 +6,7 @@ use walkdir::{DirEntry, WalkDir};
 use crate::Result;
 
 pub struct Projects {
+    pub project_path: PathBuf,
     pub selected: usize,
     pub dir_items: Vec<DirEntry>,
     pub filtered_items: Vec<DirEntry>,
@@ -27,6 +28,7 @@ impl Projects {
     pub fn new(project_path: PathBuf, ignore_path: PathBuf, no_arg: bool) -> Result<Self> {
         let dir_items = Self::get_list(&project_path, &ignore_path)?;
         let projects = Self {
+            project_path,
             selected: 0,
             filtered_items: dir_items.clone(),
             dir_items,
