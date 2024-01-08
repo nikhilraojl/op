@@ -1,28 +1,35 @@
-mod create_layout_flow;
+mod create_projects_dir;
+mod create_langs_flow;
 mod error;
 mod list_flow;
-mod main_help;
+mod main_help_flow;
 mod open_flow;
 mod projects;
 mod select_flow;
 mod utils;
 
-use create_layout_flow::CreateProjLayoutAction;
+use std::path::Path;
+
+use create_projects_dir::create_projects_dir;
+use create_langs_flow::CreateLanguageDirs;
 use error::{Error, Result};
 use list_flow::ListAction;
-use main_help::MainHelpAction;
+use main_help_flow::MainHelpAction;
 use open_flow::OpAction;
 use projects::Projects;
 use select_flow::render_loop;
-use utils::ActionTrait;
-use utils::{catch_empty_project_list, check_help_flag, check_valid_flag, get_project_path};
+use utils::{catch_empty_project_list, check_help_flag, check_valid_flag, get_profile_path};
+use utils::{ActionTrait, HelpTrait};
+
+const PROJECTS_DIR: &str = "Projects";
+const DEPLOYS_DIR: &str = "deploys";
 
 #[derive(Debug, PartialEq)]
 enum ArgAction<'a> {
     ListAllProjects(ListAction),
     OpenProject(OpAction),
     MainHelp(MainHelpAction),
-    CreateLayout(CreateProjLayoutAction<'a>),
+    CreateLayout(CreateLanguageDirs<'a>),
 }
 
 fn main() {
@@ -32,27 +39,31 @@ fn main() {
 }
 
 fn run() -> Result<()> {
-    let proj_path = get_project_path()?;
-    let ignore_dir = proj_path.join("deploys");
-
     let mut args = std::env::args();
 
     if args.len() == 1 {
-        let mut projects = Projects::new(proj_path, ignore_dir, true)?;
+        let profile_path = get_profile_path()?;
+        let proj_dir = Path::new(&profile_path).join(PROJECTS_DIR);
+        let ignore_dir = proj_dir.join(DEPLOYS_DIR);
+        if !proj_dir.try_exists()? {
+            // early return  as `PROJECTS_DIR` is just created and
+            // will contain nothing
+            return Ok(create_projects_dir()?);
+        }
+
+        let mut projects = Projects::new(proj_dir, ignore_dir, true)?;
         catch_empty_project_list(&projects.filtered_items)?;
         render_loop(&mut projects)?;
     } else {
         // first arg is generally the program path and hence skipped here
         args.next();
 
-        let projects = Projects::new(proj_path, ignore_dir, false)?;
-
-        let action_to_perform = process_arg_command(&mut args)?;
+        let action_to_perform = process_arg_command(&mut args)?; 
         match action_to_perform {
-            ArgAction::MainHelp(action) => action.execute(&projects)?,
-            ArgAction::OpenProject(action) => action.execute(&projects)?,
-            ArgAction::ListAllProjects(action) => action.execute(&projects)?,
-            ArgAction::CreateLayout(action) => action.execute(&projects)?,
+            ArgAction::MainHelp(action) => action.print_help(),
+            ArgAction::OpenProject(action) => action.execute()?,
+            ArgAction::ListAllProjects(action) => action.execute()?,
+            ArgAction::CreateLayout(action) => action.execute()?,
         }
     }
 
@@ -74,7 +85,7 @@ fn process_arg_command<T: Iterator<Item = String>>(args: &mut T) -> Result<ArgAc
         }
         return Ok(ArgAction::ListAllProjects(list_args));
     } else if check_valid_flag(&arg, "create")? {
-        let mut create_args = CreateProjLayoutAction::new();
+        let mut create_args = CreateLanguageDirs::new();
         if let Some(iarg) = &args.next() {
             create_args.help = check_help_flag(iarg, args)?;
         }
@@ -141,13 +152,13 @@ fn test_process_create_layout_action() {
     // --create
     let mut args = ["--create".to_owned()].into_iter();
     let act = process_arg_command(&mut args).unwrap();
-    let exp = ArgAction::CreateLayout(CreateProjLayoutAction::new());
+    let exp = ArgAction::CreateLayout(CreateLanguageDirs::new());
     assert_eq!(act, exp);
 
     // --create --help
     let mut args = ["--create".to_owned()].into_iter();
     let act = process_arg_command(&mut args).unwrap();
-    let exp = ArgAction::CreateLayout(CreateProjLayoutAction::new());
+    let exp = ArgAction::CreateLayout(CreateLanguageDirs::new());
     assert_eq!(act, exp);
 
     // --create --help <something more>

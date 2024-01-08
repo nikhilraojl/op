@@ -3,6 +3,7 @@ use std::path::PathBuf;
 use std::{fmt::Display, process::Command};
 use walkdir::{DirEntry, WalkDir};
 
+use crate::error::Error;
 use crate::Result;
 
 pub struct Projects {
@@ -96,6 +97,9 @@ impl Projects {
             println!("Closing project {:?}", proj.file_name());
             std::process::exit(0);
         } else {
+            if self.filtered_items.len() == 0 {
+                return Err(Error::NoProjectsFound);
+            }
             println!("No matching projects found. Only below projects are available");
             println!("{self}");
             Ok(())

@@ -1,6 +1,5 @@
 use crate::error::Result;
-use crate::projects::Projects;
-use crate::utils::ActionTrait;
+use crate::utils::{ActionTrait, HelpTrait};
 
 #[derive(Debug, PartialEq)]
 pub struct OpAction {
@@ -8,19 +7,22 @@ pub struct OpAction {
     pub print_path: bool,
     pub help: bool,
 }
-
-impl ActionTrait for OpAction {
+impl HelpTrait for OpAction {
     fn print_help(&self) {
         println!("Try to use one of the below commands \n");
         println!("op <project_name>            : Opens project directly in neovim");
         println!("op <project_name> --print|-p : Prints project path to stdout");
     }
-    fn execute(&self, projects: &Projects) -> Result<()> {
+}
+impl ActionTrait for OpAction {
+    fn execute(&self) -> Result<()> {
         if self.help {
             self.print_help();
         } else if self.print_path {
+            let projects = Self::get_projects()?;
             projects.print_work_dir(&self.proj_name);
         } else {
+            let projects = Self::get_projects()?;
             projects.open_project_in_nvim(&self.proj_name)?;
         }
         Ok(())

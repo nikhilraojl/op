@@ -1,13 +1,24 @@
-use crate::projects::Projects;
-use std::env::consts::OS;
-use std::path::{Path, PathBuf};
+use crate::{projects::Projects, DEPLOYS_DIR, PROJECTS_DIR};
+use std::{env::consts::OS, path::Path};
 use walkdir::DirEntry;
 
 use crate::error::{Error, Result};
 
 pub trait ActionTrait {
+    fn execute(&self) -> Result<()>;
+    fn get_projects() -> Result<Projects> {
+        let profile_path = get_profile_path()?;
+        let proj_dir = Path::new(&profile_path).join(PROJECTS_DIR);
+        if !proj_dir.try_exists()? {
+            return Err(Error::NoProjectsFound);
+        }
+        let ignore_dir = proj_dir.join(DEPLOYS_DIR);
+
+        return Projects::new(proj_dir, ignore_dir, false);
+    }
+}
+pub trait HelpTrait {
     fn print_help(&self);
-    fn execute(&self, projects: &Projects) -> Result<()>;
 }
 
 pub fn check_valid_flag(arg: &String, flag_name: &str) -> Result<bool> {
@@ -44,25 +55,7 @@ pub fn catch_empty_project_list(all_projs: &Vec<DirEntry>) -> Result<()> {
     }
 }
 
-pub fn get_project_path() -> Result<PathBuf> {
-    let profile_path = get_profile_path()?;
-    let proj_dir_1 = Path::new(&profile_path).join("Projects");
-    let proj_dir_2 = Path::new(&profile_path).join("projects");
-
-    if proj_dir_1.try_exists()? {
-        Ok(proj_dir_1)
-    } else if proj_dir_2.try_exists()? {
-        Ok(proj_dir_2)
-    } else {
-        let e = std::io::Error::new(
-            std::io::ErrorKind::NotFound,
-            format!("{} cannot be found", proj_dir_2.display()),
-        );
-        Err(Error::IoError(e))
-    }
-}
-
-fn get_profile_path() -> Result<String> {
+pub fn get_profile_path() -> Result<String> {
     match OS {
         "windows" => Ok(std::env::var("userprofile")?),
         "linux" => Ok(std::env::var("HOME")?),
