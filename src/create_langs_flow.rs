@@ -35,13 +35,8 @@ impl CreateLanguageDirs<'_> {
 
 impl HelpTrait for CreateLanguageDirs<'_> {
     fn print_help(&self) {
-        //TODO: Find some better way to format help text in code
-        println!(
-            r#"
-op --create|-c : Creates Projects->language layout in home directory
-                 Dirs for languages {:?} will be created"#,
-            self.lang_types
-        );
+        println!("op --create|-c : Creates Projects->language layout in home directory\n");
+        println!("- Dirs for languages {:?} will be created", self.lang_types);
     }
 }
 

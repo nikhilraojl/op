@@ -29,7 +29,7 @@ or print full path of the project using `--print` or `-p` flag. The output of `-
 op test_proj -p | cd 
 ```
 
-For auto complete in powershell you can add the below script profile
+For auto complete in powershell you can add the below script to your pprofile
 ```powershell
 $PROJECTSPATH = "$HOME\Projects\"
 $IGNOREDIR = "$HOME\Projects\deploys*"
@@ -45,7 +45,7 @@ $opCommandCompletion = {
 Register-ArgumentCompleter -Native -CommandName op -ScriptBlock $opCommandCompletion
 ```
 
-For auto complete in bash you can add the below script rc file
+For auto complete in bash you can add the below script to your rc file
 ```bash
 PROJECTS_PATH="$HOME/[Pp]rojects/*/*"
 IGNORE_DIR="$HOME/[Pp]rojects/deploys/*"
