@@ -65,7 +65,7 @@ pub fn get_profile_path() -> Result<String> {
     }
 }
 
-pub fn get_additional_paths(project_path: &PathBuf) -> Vec<PathBuf> {
+pub fn get_paths_to_include(project_path: &PathBuf) -> Vec<PathBuf> {
     let op_include = Path::new(project_path).join(OP_INCLUDE);
     let mut include_paths: Vec<PathBuf> = Vec::new();
     if !op_include.exists() {
@@ -75,7 +75,8 @@ pub fn get_additional_paths(project_path: &PathBuf) -> Vec<PathBuf> {
 
     for line in file.lines() {
         let path = PathBuf::from(line);
-        if path.exists() {
+        if path.exists() && !path.starts_with("#") {
+            // entries `#` are not considered
             include_paths.push(path);
         }
     }

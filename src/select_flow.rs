@@ -34,6 +34,9 @@ pub fn render_loop(projects: &mut Projects) -> Result<()> {
             select_project(projects)?;
             break 'main;
         }
+        if read_key == Key::Escape {
+            break 'main;
+        }
     }
     Ok(())
 }

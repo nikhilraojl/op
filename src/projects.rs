@@ -4,7 +4,7 @@ use std::{fmt::Display, process::Command};
 use walkdir::WalkDir;
 
 use crate::error::Error;
-use crate::utils::get_additional_paths;
+use crate::utils::get_paths_to_include;
 use crate::{Result, DEPLOYS_DIR};
 
 #[derive(Debug)]
@@ -30,7 +30,7 @@ impl Projects {
     }
     pub fn new(project_path: PathBuf, no_arg: bool) -> Result<Self> {
         let ignore_path = project_path.join(DEPLOYS_DIR);
-        let mut include_paths = get_additional_paths(&project_path);
+        let mut include_paths = get_paths_to_include(&project_path);
         let mut dir_items = Self::get_list(&project_path, &ignore_path)?;
         dir_items.append(&mut include_paths);
         let projects = Self {
