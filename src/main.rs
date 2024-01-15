@@ -1,5 +1,5 @@
-mod create_projects_dir;
 mod create_langs_flow;
+mod create_projects_dir;
 mod error;
 mod list_flow;
 mod main_help_flow;
@@ -10,8 +10,8 @@ mod utils;
 
 use std::path::Path;
 
-use create_projects_dir::create_projects_dir;
 use create_langs_flow::CreateLanguageDirs;
+use create_projects_dir::create_projects_dir;
 use error::{Error, Result};
 use list_flow::ListAction;
 use main_help_flow::MainHelpAction;
@@ -23,6 +23,7 @@ use utils::{ActionTrait, HelpTrait};
 
 const PROJECTS_DIR: &str = "Projects";
 const DEPLOYS_DIR: &str = "deploys";
+const OP_INCLUDE: &str = ".opinclude";
 
 #[derive(Debug, PartialEq)]
 enum ArgAction<'a> {
@@ -44,21 +45,21 @@ fn run() -> Result<()> {
     if args.len() == 1 {
         let profile_path = get_profile_path()?;
         let proj_dir = Path::new(&profile_path).join(PROJECTS_DIR);
-        let ignore_dir = proj_dir.join(DEPLOYS_DIR);
+
         if !proj_dir.try_exists()? {
             // early return  as `PROJECTS_DIR` is just created and
             // will contain nothing
             return Ok(create_projects_dir()?);
         }
 
-        let mut projects = Projects::new(proj_dir, ignore_dir, true)?;
+        let mut projects = Projects::new(proj_dir, true)?;
         catch_empty_project_list(&projects.filtered_items)?;
         render_loop(&mut projects)?;
     } else {
         // first arg is generally the program path and hence skipped here
         args.next();
 
-        let action_to_perform = process_arg_command(&mut args)?; 
+        let action_to_perform = process_arg_command(&mut args)?;
         match action_to_perform {
             ArgAction::MainHelp(action) => action.print_help(),
             ArgAction::OpenProject(action) => action.execute()?,

@@ -1,6 +1,9 @@
-use crate::{projects::Projects, DEPLOYS_DIR, PROJECTS_DIR};
-use std::{env::consts::OS, path::Path};
-use walkdir::DirEntry;
+use crate::{projects::Projects, OP_INCLUDE, PROJECTS_DIR};
+use std::{
+    env::consts::OS,
+    fs::read_to_string,
+    path::{Path, PathBuf},
+};
 
 use crate::error::{Error, Result};
 
@@ -12,9 +15,8 @@ pub trait ActionTrait {
         if !proj_dir.try_exists()? {
             return Err(Error::NoProjectsFound);
         }
-        let ignore_dir = proj_dir.join(DEPLOYS_DIR);
 
-        return Projects::new(proj_dir, ignore_dir, false);
+        return Projects::new(proj_dir, false);
     }
 }
 pub trait HelpTrait {
@@ -47,7 +49,7 @@ pub fn check_help_flag<T: Iterator<Item = String>>(arg: &String, args: &mut T) -
     return Err(Error::InvalidArgs);
 }
 
-pub fn catch_empty_project_list(all_projs: &Vec<DirEntry>) -> Result<()> {
+pub fn catch_empty_project_list(all_projs: &Vec<PathBuf>) -> Result<()> {
     if all_projs.len() == 0 {
         Err(Error::NoProjectsFound)
     } else {
@@ -61,4 +63,22 @@ pub fn get_profile_path() -> Result<String> {
         "linux" => Ok(std::env::var("HOME")?),
         _ => Err(Error::UnSupportedOS),
     }
+}
+
+pub fn get_additional_paths(project_path: &PathBuf) -> Vec<PathBuf> {
+    let op_include = Path::new(project_path).join(OP_INCLUDE);
+    let mut include_paths: Vec<PathBuf> = Vec::new();
+    if !op_include.exists() {
+        return include_paths;
+    }
+    let file = read_to_string(op_include).unwrap();
+
+    for line in file.lines() {
+        let path = PathBuf::from(line);
+        if path.exists() {
+            include_paths.push(path);
+        }
+    }
+
+    return include_paths;
 }

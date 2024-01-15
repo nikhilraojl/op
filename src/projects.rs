@@ -1,33 +1,38 @@
 use console::Term;
 use std::path::PathBuf;
 use std::{fmt::Display, process::Command};
-use walkdir::{DirEntry, WalkDir};
+use walkdir::WalkDir;
 
 use crate::error::Error;
-use crate::Result;
+use crate::utils::get_additional_paths;
+use crate::{Result, DEPLOYS_DIR};
 
+#[derive(Debug)]
 pub struct Projects {
     pub project_path: PathBuf,
     pub selected: usize,
-    pub dir_items: Vec<DirEntry>,
-    pub filtered_items: Vec<DirEntry>,
+    pub dir_items: Vec<PathBuf>,
+    pub filtered_items: Vec<PathBuf>,
     // to be used when running cli command without any args
     no_arg: bool,
 }
 
 impl Projects {
-    fn get_list(project_path: &PathBuf, ignore_path: &PathBuf) -> std::io::Result<Vec<DirEntry>> {
-        let mut projs_vec = Vec::<DirEntry>::new();
+    fn get_list(project_path: &PathBuf, ignore_path: &PathBuf) -> std::io::Result<Vec<PathBuf>> {
+        let mut projs_vec = Vec::<PathBuf>::new();
         for entry in WalkDir::new(project_path).max_depth(2) {
             let entry = entry?;
             if entry.depth() == 2 && !entry.path().starts_with(ignore_path) {
-                projs_vec.push(entry);
+                projs_vec.push(entry.into_path());
             }
         }
         return Ok(projs_vec);
     }
-    pub fn new(project_path: PathBuf, ignore_path: PathBuf, no_arg: bool) -> Result<Self> {
-        let dir_items = Self::get_list(&project_path, &ignore_path)?;
+    pub fn new(project_path: PathBuf, no_arg: bool) -> Result<Self> {
+        let ignore_path = project_path.join(DEPLOYS_DIR);
+        let mut include_paths = get_additional_paths(&project_path);
+        let mut dir_items = Self::get_list(&project_path, &ignore_path)?;
+        dir_items.append(&mut include_paths);
         let projects = Self {
             project_path,
             selected: 0,
@@ -50,15 +55,19 @@ impl Projects {
             self.selected -= 1;
         }
     }
-    pub fn filter_project_list(&mut self, filter_string: &String) -> Vec<DirEntry> {
+    pub fn filter_project_list(&mut self, filter_string: &String) -> Vec<PathBuf> {
         self.select_initial();
         return self
             .dir_items
             .clone()
             .into_iter()
             .filter(|item| {
-                let x = item.file_name().to_str().unwrap();
-                x.starts_with(filter_string)
+                let mut result = false;
+                if let Some(os_name) = item.file_name() {
+                    let x = os_name.to_str().unwrap();
+                    result = x.starts_with(filter_string)
+                }
+                return result;
             })
             .collect();
     }
@@ -75,9 +84,9 @@ impl Projects {
         }
         Ok(())
     }
-    pub fn matching_project(&self, project_name: &str) -> Option<&DirEntry> {
+    pub fn matching_project(&self, project_name: &str) -> Option<&PathBuf> {
         for proj in &self.filtered_items {
-            let matching_project = proj.path().ends_with(project_name);
+            let matching_project = proj.ends_with(project_name);
             if matching_project {
                 return Some(proj);
             }
@@ -89,7 +98,7 @@ impl Projects {
         if let Some(proj) = self.matching_project(project_name) {
             println!("Opening project {:?}", proj.file_name());
 
-            std::env::set_current_dir(proj.path())?;
+            std::env::set_current_dir(proj)?;
 
             let mut nvim_process = Command::new("nvim");
             nvim_process.arg(".");
@@ -108,7 +117,7 @@ impl Projects {
 
     pub fn print_work_dir(&self, project_name: &str) {
         if let Some(proj) = self.matching_project(project_name) {
-            println!("{}", proj.path().display());
+            println!("{}", proj.display());
         } else {
             println!("No matching projects found. Couldn't switch to project dir'");
         }
@@ -124,10 +133,12 @@ impl Display for Projects {
             } else {
                 output.push_str("   ");
             }
-            let dir_name = item.file_name().to_str().unwrap();
-            output.push_str(dir_name);
-            if idx < (self.filtered_items.len() - 1) {
-                output.push('\n');
+            if let Some(dir_name) = item.file_name() {
+                let name = dir_name.to_str().unwrap();
+                output.push_str(name);
+                if idx < (self.filtered_items.len() - 1) {
+                    output.push('\n');
+                }
             }
         }
         write!(f, "{output}")
