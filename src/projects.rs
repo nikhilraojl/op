@@ -96,14 +96,14 @@ impl Projects {
 
     pub fn open_project_in_nvim(&self, project_name: &str) -> Result<()> {
         if let Some(proj) = self.matching_project(project_name) {
-            println!("Opening project {:?}", proj.file_name());
+            println!("Opening project {:?}", project_name);
 
             std::env::set_current_dir(proj)?;
 
             let mut nvim_process = Command::new("nvim");
             nvim_process.arg(".");
             nvim_process.status()?;
-            println!("Closing project {:?}", proj.file_name());
+            println!("Closing project {:?}", project_name);
             std::process::exit(0);
         } else {
             if self.filtered_items.len() == 0 {
@@ -128,11 +128,13 @@ impl Display for Projects {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         let mut output = String::new();
         for (idx, item) in self.filtered_items.iter().enumerate() {
-            if self.selected == idx && self.no_arg {
-                output.push_str(">> ");
-            } else {
-                output.push_str("   ");
-            }
+            if self.no_arg {
+                if self.selected == idx {
+                    output.push_str(">> ");
+                } else {
+                    output.push_str("   ");
+                }
+            } 
             if let Some(dir_name) = item.file_name() {
                 let name = dir_name.to_str().unwrap();
                 output.push_str(name);

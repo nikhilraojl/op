@@ -59,30 +59,25 @@ Use `op [--help|-h]`: to show available commands & options
 ## Autocomplete for shells
 For tab completion in powershell you can add the below script to your pprofile
 ```powershell
-$PROJECTSPATH = "$HOME\Projects\"
-$IGNOREDIR = "$HOME\Projects\deploys*"
 $opCommandCompletion = {
     param($stringMatch)
-    $items  = @(Get-ChildItem -Path "$PROJECTSPATH\*\$stringMatch*" -Directory |
-        Where-Object {$_.fullname -notlike $IGNOREDIR } |
-        Select-Object -ExpandProperty name )
+
+    # using outupt from the `op --list` command to build autocomplete list
+    $items = @(op --list | Where-Object {$_ -like "$wordToComplete*"})
 
     $items
 }
-
 Register-ArgumentCompleter -Native -CommandName op -ScriptBlock $opCommandCompletion
 ```
 
 For tab completion in bash you can add the below script to your rc file
 ```bash
-PROJECTS_PATH="$HOME/[Pp]rojects/*/*"
-IGNORE_DIR="$HOME/[Pp]rojects/deploys/*"
 _op_completion() {
 	if [ "${#COMP_WORDS[@]}" != "2" ]; then
 		return
 	fi
 
-	COMPREPLY=($(compgen -W "$(find ${PROJECTS_PATH} -mindepth 0 -maxdepth 0 -type d -not -path ${IGNORE_DIR} -printf "%f\n")" "${COMP_WORDS[1]}"))
+	COMPREPLY=($(compgen -W "$(op --list)" "${COMP_WORDS[1]}"))
 }
 complete -F _op_completion op
 ```

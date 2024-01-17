@@ -18,7 +18,6 @@ impl ActionTrait for ListAction {
         } else {
             let projects = Self::get_projects()?;
             catch_empty_project_list(&projects.filtered_items)?;
-            println!("Available projects:\n");
             println!("{}", projects);
         }
         Ok(())
