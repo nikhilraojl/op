@@ -9,13 +9,18 @@ use crate::error::{Error, Result};
 
 pub trait ActionTrait {
     fn execute(&self) -> Result<()>;
-    fn get_projects() -> Result<Projects> {
+    fn get_project_dir() -> Result<PathBuf> {
+        // returns error only if profile doesn't exist
+        // unchecked for `PROJECTS_DIR`
         let profile_path = get_profile_path()?;
         let proj_dir = Path::new(&profile_path).join(PROJECTS_DIR);
+        return Ok(proj_dir);
+    }
+    fn get_projects() -> Result<Projects> {
+        let proj_dir = Self::get_project_dir()?;
         if !proj_dir.try_exists()? {
             return Err(Error::NoProjectsFound);
         }
-
         return Projects::new(proj_dir, false);
     }
 }

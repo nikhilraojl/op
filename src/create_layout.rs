@@ -1,70 +1,73 @@
 use std::fs::DirBuilder;
 use std::fs::File;
 use std::io::Write;
-use std::path::PathBuf;
 
 use crate::error::Result;
 use crate::utils::ActionTrait;
 use crate::utils::HelpTrait;
-use crate::OP_INCLUDE;
+use crate::{OP_INCLUDE, PROJECTS_DIR};
 
 #[derive(Debug, PartialEq)]
-pub struct CreateLanguageDirs<'a> {
+pub struct CreateLayout<'a> {
     lang_types: Vec<&'a str>,
     pub help: bool,
 }
 
-impl CreateLanguageDirs<'_> {
+impl CreateLayout<'_> {
     pub fn new() -> Self {
         Self {
             lang_types: vec!["python", "javascript", "rust", "go", "plain_txt"],
             help: false,
         }
     }
-    fn create_lang_dirs(&self, path: &PathBuf) -> Result<()> {
+    fn create_lang_dirs(&self) -> Result<()> {
+        let path = Self::get_project_dir()?;
+        let recurse = !path.exists();
+        if recurse {
+            println!("Creating '{PROJECTS_DIR}' directory");
+        }
         // create lang dirs
         for lang in &self.lang_types {
             let path = path.join(lang);
             if path.exists() {
-                println!("'{}' directory exists. SKIPPING", lang);
+                println!("'{PROJECTS_DIR}/{lang}' directory already exists. SKIPPING");
             } else {
-                println!("CREATING '{}' directory", lang);
-                DirBuilder::new().recursive(true).create(path)?;
+                println!("Creating '{PROJECTS_DIR}/{lang}' directory");
+                DirBuilder::new().recursive(recurse).create(path)?;
             }
         }
-        // create `.opinclude` file
+        // create `.opinclude` file. `path` is supposed to exist at this point
         let op_include_path = path.join(OP_INCLUDE);
         if let Ok(mut f) = File::options()
             .write(true)
             .create_new(true)
             .open(op_include_path)
         {
-            println!("CREATING '{}' file", OP_INCLUDE);
+            println!("Creating '{PROJECTS_DIR}/{OP_INCLUDE}' file");
             f.write(
                 b"# include absolute paths to directories\n# lines starting with `#` are ignored",
             )?;
         } else {
-            println!("'{}' directory exists. SKIPPING", OP_INCLUDE);
+            println!("'{OP_INCLUDE}' directory exists. SKIPPING");
         };
         println!("Done");
         Ok(())
     }
 }
 
-impl HelpTrait for CreateLanguageDirs<'_> {
+impl HelpTrait for CreateLayout<'_> {
     fn print_help(&self) {
         println!("op --create|-c : Creates Projects->language layout in home directory\n");
         println!("- Dirs for languages {:?} will be created", self.lang_types);
     }
 }
 
-impl ActionTrait for CreateLanguageDirs<'_> {
+impl ActionTrait for CreateLayout<'_> {
     fn execute(&self) -> Result<()> {
         if self.help {
             self.print_help();
         } else {
-            let projects = Self::get_projects()?;
-            return self.create_lang_dirs(&projects.project_path);
+            return self.create_lang_dirs();
         }
         Ok(())
     }

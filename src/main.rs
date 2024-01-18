@@ -1,4 +1,4 @@
-mod create_langs_flow;
+mod create_layout;
 mod create_projects_dir;
 mod error;
 mod list_flow;
@@ -10,7 +10,7 @@ mod utils;
 
 use std::path::Path;
 
-use create_langs_flow::CreateLanguageDirs;
+use create_layout::CreateLayout;
 use create_projects_dir::create_projects_dir;
 use error::{Error, Result};
 use list_flow::ListAction;
@@ -30,7 +30,7 @@ enum ArgAction<'a> {
     ListAllProjects(ListAction),
     OpenProject(OpAction),
     MainHelp(MainHelpAction),
-    CreateLayout(CreateLanguageDirs<'a>),
+    CreateLayout(CreateLayout<'a>),
 }
 
 fn main() {
@@ -86,7 +86,7 @@ fn process_arg_command<T: Iterator<Item = String>>(args: &mut T) -> Result<ArgAc
         }
         return Ok(ArgAction::ListAllProjects(list_args));
     } else if check_valid_flag(&arg, "create")? {
-        let mut create_args = CreateLanguageDirs::new();
+        let mut create_args = CreateLayout::new();
         if let Some(iarg) = &args.next() {
             create_args.help = check_help_flag(iarg, args)?;
         }
@@ -153,13 +153,13 @@ fn test_process_create_layout_action() {
     // --create
     let mut args = ["--create".to_owned()].into_iter();
     let act = process_arg_command(&mut args).unwrap();
-    let exp = ArgAction::CreateLayout(CreateLanguageDirs::new());
+    let exp = ArgAction::CreateLayout(CreateLayout::new());
     assert_eq!(act, exp);
 
     // --create --help
     let mut args = ["--create".to_owned()].into_iter();
     let act = process_arg_command(&mut args).unwrap();
-    let exp = ArgAction::CreateLayout(CreateLanguageDirs::new());
+    let exp = ArgAction::CreateLayout(CreateLayout::new());
     assert_eq!(act, exp);
 
     // --create --help <something more>
