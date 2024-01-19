@@ -1,6 +1,5 @@
-use std::fs::{DirEntry, File, OpenOptions};
+use std::fs::File;
 use std::io::Write;
-use std::path::PathBuf;
 
 use crate::{
     error::Error,

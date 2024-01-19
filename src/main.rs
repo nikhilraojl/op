@@ -120,8 +120,6 @@ fn process_arg_command<T: Iterator<Item = String>>(args: &mut T) -> Result<ArgAc
             }
             None => return Err(Error::InvalidArgs),
         }
-        println!("{:?}", include_args);
-
         return Ok(ArgAction::AddToOpInclude(include_args));
     } else {
         // we go the OpenProject route
