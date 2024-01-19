@@ -1,6 +1,7 @@
 mod create_layout;
 mod create_projects_dir;
 mod error;
+mod include_flow;
 mod list_flow;
 mod main_help_flow;
 mod open_flow;
@@ -8,18 +9,19 @@ mod projects;
 mod select_flow;
 mod utils;
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use create_layout::CreateLayout;
 use create_projects_dir::create_projects_dir;
 use error::{Error, Result};
+use include_flow::IncludeAction;
 use list_flow::ListAction;
 use main_help_flow::MainHelpAction;
 use open_flow::OpAction;
 use projects::Projects;
 use select_flow::render_loop;
+use utils::ActionTrait;
 use utils::{catch_empty_project_list, check_help_flag, check_valid_flag, get_profile_path};
-use utils::{ActionTrait, HelpTrait};
 
 const PROJECTS_DIR: &str = "Projects";
 const DEPLOYS_DIR: &str = "deploys";
@@ -31,6 +33,19 @@ enum ArgAction<'a> {
     OpenProject(OpAction),
     MainHelp(MainHelpAction),
     CreateLayout(CreateLayout<'a>),
+    AddToOpInclude(IncludeAction),
+}
+
+impl<'a> ArgAction<'a> {
+    fn execute(&self) -> Result<()> {
+        match self {
+            Self::MainHelp(action) => action.execute(),
+            Self::OpenProject(action) => action.execute(),
+            Self::ListAllProjects(action) => action.execute(),
+            Self::CreateLayout(action) => action.execute(),
+            Self::AddToOpInclude(action) => action.execute(),
+        }
+    }
 }
 
 fn main() {
@@ -59,13 +74,8 @@ fn run() -> Result<()> {
         // first arg is generally the program path and hence skipped here
         args.next();
 
-        let action_to_perform = process_arg_command(&mut args)?;
-        match action_to_perform {
-            ArgAction::MainHelp(action) => action.print_help(),
-            ArgAction::OpenProject(action) => action.execute()?,
-            ArgAction::ListAllProjects(action) => action.execute()?,
-            ArgAction::CreateLayout(action) => action.execute()?,
-        }
+        let action = process_arg_command(&mut args)?;
+        action.execute()?;
     }
 
     Ok(())
@@ -91,6 +101,28 @@ fn process_arg_command<T: Iterator<Item = String>>(args: &mut T) -> Result<ArgAc
             create_args.help = check_help_flag(iarg, args)?;
         }
         return Ok(ArgAction::CreateLayout(create_args));
+    } else if check_valid_flag(&arg, "add")? {
+        let mut include_args = IncludeAction {
+            path: String::new(),
+            help: false,
+        };
+        match args.next() {
+            Some(iarg) => {
+                let path = PathBuf::from(&iarg);
+                if path.exists() {
+                    include_args.path = iarg;
+                    if let Some(iarg) = &args.next() {
+                        include_args.help = check_help_flag(&iarg, args)?;
+                    }
+                } else {
+                    include_args.help = check_help_flag(&iarg, args)?;
+                }
+            }
+            None => return Err(Error::InvalidArgs),
+        }
+        println!("{:?}", include_args);
+
+        return Ok(ArgAction::AddToOpInclude(include_args));
     } else {
         // we go the OpenProject route
         let mut op_args = OpAction {
@@ -242,4 +274,50 @@ fn test_process_open_action_print() {
         Ok(_) => assert!(false),
         Err(_) => assert!(true),
     }
+}
+
+#[test]
+fn test_add_to_opinclude_action() {
+    // --add <some valid path>
+    let some_existing_path = get_profile_path().unwrap();
+    let mut args = ["--add".to_owned(), some_existing_path.clone()].into_iter();
+    let act = process_arg_command(&mut args).unwrap();
+    let include_args = IncludeAction {
+        path: some_existing_path,
+        help: false,
+    };
+    let exp = ArgAction::AddToOpInclude(include_args);
+    assert_eq!(act, exp);
+
+    // project --add <invalid path>
+    let some_existing_path = "/invalid/path".to_owned();
+    let mut args = ["--add".to_owned(), some_existing_path.clone()].into_iter();
+    let act = process_arg_command(&mut args).is_ok();
+    assert_eq!(act, false);
+
+    // --add --help
+    let mut args = ["--add".to_owned(), "--help".to_owned()].into_iter();
+    let act = process_arg_command(&mut args).unwrap();
+    let include_args = IncludeAction {
+        path: String::new(),
+        help: true,
+    };
+    let exp = ArgAction::AddToOpInclude(include_args);
+    assert_eq!(act, exp);
+    //
+    // --add <some valid path> --help
+    let some_existing_path = get_profile_path().unwrap();
+    let mut args = [
+        "--add".to_owned(),
+        some_existing_path.clone(),
+        "--help".to_owned(),
+    ]
+    .into_iter();
+    let act = process_arg_command(&mut args).unwrap();
+    let include_args = IncludeAction {
+        path: some_existing_path,
+        help: true,
+    };
+    let exp = ArgAction::AddToOpInclude(include_args);
+    assert_eq!(act, exp);
 }

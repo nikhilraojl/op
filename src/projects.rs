@@ -134,7 +134,7 @@ impl Display for Projects {
                 } else {
                     output.push_str("   ");
                 }
-            } 
+            }
             if let Some(dir_name) = item.file_name() {
                 let name = dir_name.to_str().unwrap();
                 output.push_str(name);

@@ -1,5 +1,5 @@
 use crate::error::Result;
-use crate::utils::{ActionTrait, HelpTrait};
+use crate::utils::{get_projects, ActionTrait, HelpTrait};
 
 #[derive(Debug, PartialEq)]
 pub struct OpAction {
@@ -19,10 +19,10 @@ impl ActionTrait for OpAction {
         if self.help {
             self.print_help();
         } else if self.print_path {
-            let projects = Self::get_projects()?;
+            let projects = get_projects()?;
             projects.print_work_dir(&self.proj_name);
         } else {
-            let projects = Self::get_projects()?;
+            let projects = get_projects()?;
             projects.open_project_in_nvim(&self.proj_name)?;
         }
         Ok(())

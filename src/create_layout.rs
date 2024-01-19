@@ -3,6 +3,7 @@ use std::fs::File;
 use std::io::Write;
 
 use crate::error::Result;
+use crate::utils::get_project_dir;
 use crate::utils::ActionTrait;
 use crate::utils::HelpTrait;
 use crate::{OP_INCLUDE, PROJECTS_DIR};
@@ -21,7 +22,7 @@ impl CreateLayout<'_> {
         }
     }
     fn create_lang_dirs(&self) -> Result<()> {
-        let path = Self::get_project_dir()?;
+        let path = get_project_dir()?;
         let recurse = !path.exists();
         if recurse {
             println!("Creating '{PROJECTS_DIR}' directory");

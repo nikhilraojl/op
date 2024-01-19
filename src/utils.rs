@@ -9,20 +9,6 @@ use crate::error::{Error, Result};
 
 pub trait ActionTrait {
     fn execute(&self) -> Result<()>;
-    fn get_project_dir() -> Result<PathBuf> {
-        // returns error only if profile doesn't exist
-        // unchecked for `PROJECTS_DIR`
-        let profile_path = get_profile_path()?;
-        let proj_dir = Path::new(&profile_path).join(PROJECTS_DIR);
-        return Ok(proj_dir);
-    }
-    fn get_projects() -> Result<Projects> {
-        let proj_dir = Self::get_project_dir()?;
-        if !proj_dir.try_exists()? {
-            return Err(Error::NoProjectsFound);
-        }
-        return Projects::new(proj_dir, false);
-    }
 }
 pub trait HelpTrait {
     fn print_help(&self);
@@ -87,4 +73,20 @@ pub fn get_paths_to_include(project_path: &PathBuf) -> Vec<PathBuf> {
     }
 
     return include_paths;
+}
+
+pub fn get_project_dir() -> Result<PathBuf> {
+    // returns error only if profile doesn't exist
+    // unchecked for `PROJECTS_DIR`
+    let profile_path = get_profile_path()?;
+    let proj_dir = Path::new(&profile_path).join(PROJECTS_DIR);
+    return Ok(proj_dir);
+}
+
+pub fn get_projects() -> Result<Projects> {
+    let proj_dir = get_project_dir()?;
+    if !proj_dir.try_exists()? {
+        return Err(Error::NoProjectsFound);
+    }
+    return Projects::new(proj_dir, false);
 }

@@ -1,4 +1,5 @@
-use crate::utils::HelpTrait;
+use crate::error::Result;
+use crate::utils::{ActionTrait, HelpTrait};
 
 #[derive(Debug, PartialEq)]
 pub struct MainHelpAction;
@@ -13,5 +14,11 @@ impl HelpTrait for MainHelpAction {
         );
         println!("op <project_name>             : Opens project directly in neovim");
         println!("op <project_name> --print|-p  : Prints project path to stdout");
+    }
+}
+impl ActionTrait for MainHelpAction {
+    fn execute(&self) -> Result<()> {
+        self.print_help();
+        Ok(())
     }
 }
