@@ -3,9 +3,10 @@ use std::path::PathBuf;
 use std::{fmt::Display, process::Command};
 use walkdir::WalkDir;
 
+use super::constants::DEPLOYS_DIR;
+use super::get_paths_to_include;
 use crate::error::Error;
-use crate::utils::get_paths_to_include;
-use crate::{Result, DEPLOYS_DIR};
+use crate::Result;
 
 #[derive(Debug)]
 pub struct Projects {
@@ -32,6 +33,7 @@ impl Projects {
         let ignore_path = project_path.join(DEPLOYS_DIR);
         let mut include_paths = get_paths_to_include(&project_path);
         let mut dir_items = Self::get_list(&project_path, &ignore_path)?;
+        dir_items.sort();
         dir_items.append(&mut include_paths);
         let projects = Self {
             project_path,

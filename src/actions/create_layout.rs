@@ -3,10 +3,10 @@ use std::fs::File;
 use std::io::Write;
 
 use crate::error::Result;
+use crate::utils::constants::{OP_INCLUDE, PROJECTS_DIR};
 use crate::utils::get_project_dir;
 use crate::utils::ActionTrait;
 use crate::utils::HelpTrait;
-use crate::{OP_INCLUDE, PROJECTS_DIR};
 
 #[derive(Debug, PartialEq)]
 pub struct CreateLayout<'a> {

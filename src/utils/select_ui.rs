@@ -1,7 +1,7 @@
 use console::{Key, Term};
 
+use super::projects::Projects;
 use crate::error::{Error, Result};
-use crate::projects::Projects;
 use crate::utils::catch_empty_project_list;
 
 pub fn render_loop(projects: &mut Projects) -> Result<()> {

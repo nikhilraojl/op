@@ -1,11 +1,9 @@
 use std::fs::File;
 use std::io::Write;
 
-use crate::{
-    error::Error,
-    utils::{get_project_dir, ActionTrait, HelpTrait},
-    OP_INCLUDE,
-};
+use crate::error::Error;
+use crate::utils::constants::OP_INCLUDE;
+use crate::utils::{get_project_dir, ActionTrait, HelpTrait};
 
 #[derive(PartialEq, Debug)]
 pub struct IncludeAction {

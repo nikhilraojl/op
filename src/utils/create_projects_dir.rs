@@ -5,7 +5,7 @@ use crate::error::Result;
 use crate::utils::get_profile_path;
 use console::{Key, Term};
 
-pub fn create_projects_dir() -> Result<()> {
+pub fn start() -> Result<()> {
     let term = Term::stdout();
     term.hide_cursor()?;
     term.write_line("No directory named '[Pp]rojects' found")?;
