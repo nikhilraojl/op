@@ -10,7 +10,7 @@ pub fn render_loop(projects: &mut Projects) -> Result<()> {
     term.hide_cursor()?;
     println!("{projects}");
     'main: loop {
-        let read_key = term.read_key().unwrap();
+        let read_key = term.read_key().expect("Failed to read key");
         if read_key == Key::ArrowUp {
             projects.select_previous();
             projects.filter_print(None, &term)?;

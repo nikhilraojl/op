@@ -33,8 +33,13 @@ impl Projects {
         let ignore_path = project_path.join(DEPLOYS_DIR);
         let mut include_paths = get_paths_to_include(&project_path);
         let mut dir_items = Self::get_list(&project_path, &ignore_path)?;
-        dir_items.sort();
         dir_items.append(&mut include_paths);
+        dir_items.sort_by(|a, b| {
+            a.file_name()
+                .expect("Failed to get filename OsStr")
+                .partial_cmp(b.file_name().expect("Failed to get filename OsStr"))
+                .expect("Failed to sort `Projects` vec")
+        });
         let projects = Self {
             project_path,
             selected: 0,
@@ -66,7 +71,7 @@ impl Projects {
             .filter(|item| {
                 let mut result = false;
                 if let Some(os_name) = item.file_name() {
-                    let x = os_name.to_str().unwrap();
+                    let x = os_name.to_str().expect("Failed to convert OsStr to str");
                     result = x.starts_with(filter_string)
                 }
                 return result;
@@ -138,7 +143,7 @@ impl Display for Projects {
                 }
             }
             if let Some(dir_name) = item.file_name() {
-                let name = dir_name.to_str().unwrap();
+                let name = dir_name.to_str().expect("Failed to convert OsStr to str");
                 output.push_str(name);
                 if idx < (self.filtered_items.len() - 1) {
                     output.push('\n');

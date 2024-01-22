@@ -68,7 +68,7 @@ pub fn get_paths_to_include(project_path: &PathBuf) -> Vec<PathBuf> {
     if !op_include.exists() {
         return include_paths;
     }
-    let file = read_to_string(op_include).unwrap();
+    let file = read_to_string(op_include).expect("Missing `.opinclude` in HOME/projects");
 
     for line in file.lines() {
         let path = PathBuf::from(line);
