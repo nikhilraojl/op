@@ -20,22 +20,36 @@ pub trait HelpTrait {
     fn print_help(&self);
 }
 
-pub fn check_valid_flag(arg: &String, flag_name: &str) -> Result<bool> {
+#[derive(Default)]
+pub enum ShortFlag {
+    #[default]
+    Infer,
+    Value(char),
+}
+
+pub fn check_valid_flag(arg: &String, flag_name: &str, short_name: ShortFlag) -> Result<bool> {
     // infers long and short form of flag
     // flag_name = "test"
     // long: --test
     // short: -t
     let mut short = "-".to_owned();
     let mut long = "--".to_owned();
-    let short_notation = flag_name.chars().nth(0).ok_or(Error::InvalidArgs)?;
-    short.push(short_notation);
+    match short_name {
+        ShortFlag::Infer => {
+            let short_notation = flag_name.chars().nth(0).ok_or(Error::InvalidArgs)?;
+            short.push(short_notation);
+        }
+        ShortFlag::Value(arg_name) => {
+            short.push(arg_name);
+        }
+    }
     long.push_str(flag_name);
 
     return Ok(arg == &short || arg == &long);
 }
 
 pub fn check_help_flag<T: Iterator<Item = String>>(arg: &String, args: &mut T) -> Result<bool> {
-    let help_flag = check_valid_flag(arg, "help")?;
+    let help_flag = check_valid_flag(arg, "help", ShortFlag::Infer)?;
     if help_flag {
         if args.next().is_some() {
             // there should be no args after --help flag
