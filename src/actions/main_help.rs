@@ -14,6 +14,8 @@ impl HelpTrait for MainHelpAction {
         );
         println!("op <project_name>             : Opens project directly in neovim");
         println!("op <project_name> --print|-p  : Prints project path to stdout");
+        println!("op --add|-a <path>            : Adds a path to `.opinclude`");
+        println!("op --pop|-o                   : Pops last path from `.opinclude`");
     }
 }
 impl ActionTrait for MainHelpAction {

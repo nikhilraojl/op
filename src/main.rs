@@ -43,7 +43,7 @@ impl<'a> ArgAction<'a> {
 
 fn main() {
     if let Err(err) = run() {
-        println!("{err}");
+        eprintln!("{err}");
     }
 }
 

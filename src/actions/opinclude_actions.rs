@@ -14,7 +14,7 @@ pub struct IncludeAction {
 
 impl HelpTrait for IncludeAction {
     fn print_help(&self) {
-        println!("op --add|-a <path>           : Adds path to `.opinclude`");
+        println!("op --add|-a <path>            : Adds a path to `.opinclude`");
     }
 }
 
@@ -44,7 +44,7 @@ pub struct PopAction {
 
 impl HelpTrait for PopAction {
     fn print_help(&self) {
-        println!("op --pop|-o                  : Pops last path from `.opinclude`");
+        println!("op --pop|-o                   : Pops last path from `.opinclude`");
     }
 }
 
@@ -59,21 +59,43 @@ impl ActionTrait for PopAction {
                 return Err(Error::NoProjectsFound);
             }
             let file_buf = read_to_string(&opinclude_file)?;
-            let mut z = 0;
             let mut lines = file_buf.lines().peekable();
+            if lines.clone().count() == 0 {
+                println!("Nothing to pop");
+                return Ok(())
+            }
+
             let mut popped_line = "";
+            let mut bytes_to_keep = 0;
             while let Some(line) = lines.next() {
                 if lines.peek().is_some() {
-                    z += line.len();
-                    z += 1;
+                    bytes_to_keep += line.len();
+                    bytes_to_keep += 1;
                 } else {
                     popped_line = line;
                 }
             }
-            // buffer containing everything excluding last line i.e popping last line
-            let buf = &file_buf[0..z];
-            write(&opinclude_file, buf)?;
-            println!("'{}' is popped.", popped_line);
+
+            print!("Are you sure you want to drop '{popped_line}'? ");
+            std::io::stdout().flush()?;
+            let mut answer = String::new();
+            let stdin = std::io::stdin();
+            stdin.read_line(&mut answer)?;
+
+            match answer.trim_end() {
+                "y" | "Y" | "Yes" | "yes" => {
+                    // buffer containing everything excluding last line for 
+                    // writing back to file
+                    let buf = &file_buf[0..bytes_to_keep];
+                    write(&opinclude_file, buf)?;
+                    println!("Dropped");
+                    return Ok(());
+                }
+                _ => {
+                    println!("Skipping");
+                    return Ok(());
+                }
+            }
         }
         Ok(())
     }
