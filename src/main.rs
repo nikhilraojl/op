@@ -12,7 +12,7 @@ use actions::open_in_nvim::OpAction;
 use actions::opinclude_actions::{IncludeAction, PopAction};
 use error::{Error, Result};
 use utils::constants::PROJECTS_DIR;
-use utils::create_projects_dir::start;
+use utils::create_projects_dir;
 use utils::projects::Projects;
 use utils::select_ui::render_loop;
 use utils::{catch_empty_project_list, check_help_flag, check_valid_flag, get_profile_path};
@@ -57,7 +57,7 @@ fn run() -> Result<()> {
         if !proj_dir.try_exists()? {
             // early return  as `PROJECTS_DIR` is just created and
             // will contain nothing
-            return Ok(start()?);
+            return create_projects_dir::start();
         }
 
         let mut projects = Projects::new(proj_dir, true)?;
@@ -105,7 +105,7 @@ fn process_arg_command<T: Iterator<Item = String>>(args: &mut T) -> Result<ArgAc
                 if path.exists() {
                     include_args.path = iarg;
                     if let Some(iarg) = &args.next() {
-                        include_args.help = check_help_flag(&iarg, args)?;
+                        include_args.help = check_help_flag(iarg, args)?;
                     }
                 } else {
                     include_args.help = check_help_flag(&iarg, args)?;

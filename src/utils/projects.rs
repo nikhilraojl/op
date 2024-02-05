@@ -86,7 +86,7 @@ impl Projects {
             println!("Find: {filter_string}");
             self.filtered_items = self.filter_project_list(filter_string);
         }
-        if self.filtered_items.len() > 0 {
+        if !self.filtered_items.is_empty() {
             println!("{}", self);
         }
         Ok(())
@@ -113,7 +113,7 @@ impl Projects {
             println!("Closing project {:?}", project_name);
             std::process::exit(0);
         } else {
-            if self.filtered_items.len() == 0 {
+            if self.filtered_items.is_empty() {
                 return Err(Error::NoProjectsFound);
             }
             println!("No matching projects found. Only below projects are available");

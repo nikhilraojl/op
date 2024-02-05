@@ -45,7 +45,7 @@ impl CreateLayout<'_> {
             .open(op_include_path)
         {
             println!("Creating '{PROJECTS_DIR}/{OP_INCLUDE}' file");
-            f.write(
+            let _ = f.write(
                 b"# include absolute paths to directories\n# lines starting with `#` are ignored\n",
             )?;
         } else {

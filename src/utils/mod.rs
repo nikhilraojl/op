@@ -36,7 +36,7 @@ pub fn check_valid_flag(arg: &String, flag_name: &str, short_name: ShortFlag) ->
     let mut long = "--".to_owned();
     match short_name {
         ShortFlag::Infer => {
-            let short_notation = flag_name.chars().nth(0).ok_or(Error::InvalidArgs)?;
+            let short_notation = flag_name.chars().next().ok_or(Error::InvalidArgs)?;
             short.push(short_notation);
         }
         ShortFlag::Value(arg_name) => {
@@ -61,7 +61,7 @@ pub fn check_help_flag<T: Iterator<Item = String>>(arg: &String, args: &mut T) -
 }
 
 pub fn catch_empty_project_list(all_projs: &Vec<PathBuf>) -> Result<()> {
-    if all_projs.len() == 0 {
+    if all_projs.is_empty() {
         Err(Error::NoProjectsFound)
     } else {
         Ok(())
