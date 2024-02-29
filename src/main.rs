@@ -6,6 +6,7 @@ mod utils;
 use std::path::{Path, PathBuf};
 
 use actions::create_layout::CreateLayout;
+use actions::git_status::GitStatusAction;
 use actions::list_projects::ListAction;
 use actions::main_help::MainHelpAction;
 use actions::open_in_nvim::OpAction;
@@ -26,6 +27,7 @@ enum ArgAction<'a> {
     CreateLayout(CreateLayout<'a>),
     AddToOpInclude(IncludeAction),
     PopFromOpInclude(PopAction),
+    GetGitStatus(GitStatusAction),
 }
 
 impl<'a> ArgAction<'a> {
@@ -37,6 +39,7 @@ impl<'a> ArgAction<'a> {
             Self::CreateLayout(action) => action.execute(),
             Self::AddToOpInclude(action) => action.execute(),
             Self::PopFromOpInclude(action) => action.execute(),
+            Self::GetGitStatus(action) => action.execute(),
         }
     }
 }
@@ -88,13 +91,15 @@ fn process_arg_command<T: Iterator<Item = String>>(args: &mut T) -> Result<ArgAc
             list_args.help = check_help_flag(iarg, args)?;
         }
         return Ok(ArgAction::ListAllProjects(list_args));
-    } else if check_valid_flag(&arg, "create", ShortFlag::Infer)? {
+    }
+    if check_valid_flag(&arg, "create", ShortFlag::Infer)? {
         let mut create_args = CreateLayout::new();
         if let Some(iarg) = &args.next() {
             create_args.help = check_help_flag(iarg, args)?;
         }
         return Ok(ArgAction::CreateLayout(create_args));
-    } else if check_valid_flag(&arg, "add", ShortFlag::Infer)? {
+    }
+    if check_valid_flag(&arg, "add", ShortFlag::Infer)? {
         let mut include_args = IncludeAction {
             path: String::new(),
             help: false,
@@ -114,33 +119,42 @@ fn process_arg_command<T: Iterator<Item = String>>(args: &mut T) -> Result<ArgAc
             None => return Err(Error::InvalidArgs),
         }
         return Ok(ArgAction::AddToOpInclude(include_args));
-    } else if check_valid_flag(&arg, "pop", ShortFlag::Value('o'))? {
+    }
+    if check_valid_flag(&arg, "pop", ShortFlag::Value('o'))? {
         let mut pop_args = PopAction { help: false };
         if let Some(iarg) = &args.next() {
             pop_args.help = check_help_flag(iarg, args)?;
         }
         return Ok(ArgAction::PopFromOpInclude(pop_args));
-    } else {
-        // we go the OpenProject route
-        let mut op_args = OpAction {
-            proj_name: arg,
-            print_path: false,
-            help: false,
-        };
-
-        let mut next_arg = args.next();
-
-        if let Some(iarg) = &next_arg {
-            if check_valid_flag(iarg, "print", ShortFlag::Infer)? {
-                op_args.print_path = true;
-                next_arg = args.next();
-            }
-        }
-
-        if let Some(iarg) = next_arg {
-            op_args.help = check_help_flag(&iarg, args)?;
-        }
-
-        return Ok(ArgAction::OpenProject(op_args));
     }
+
+    if check_valid_flag(&arg, "git-status", ShortFlag::Value('g'))? {
+        let mut git_status_args = GitStatusAction { help: false };
+        if let Some(iarg) = &args.next() {
+            git_status_args.help = check_help_flag(iarg, args)?;
+        }
+        return Ok(ArgAction::GetGitStatus(git_status_args));
+    }
+
+    // we go the OpenProject if no other flags are matched
+    let mut op_args = OpAction {
+        proj_name: arg,
+        print_path: false,
+        help: false,
+    };
+
+    let mut next_arg = args.next();
+
+    if let Some(iarg) = &next_arg {
+        if check_valid_flag(iarg, "print", ShortFlag::Infer)? {
+            op_args.print_path = true;
+            next_arg = args.next();
+        }
+    }
+
+    if let Some(iarg) = next_arg {
+        op_args.help = check_help_flag(&iarg, args)?;
+    }
+
+    Ok(ArgAction::OpenProject(op_args))
 }
