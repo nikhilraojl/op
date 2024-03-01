@@ -45,7 +45,7 @@ pub fn check_valid_flag(arg: &String, flag_name: &str, short_name: ShortFlag) ->
     }
     long.push_str(flag_name);
 
-    return Ok(arg == &short || arg == &long);
+    Ok(arg == &short || arg == &long)
 }
 
 pub fn check_help_flag<T: Iterator<Item = String>>(arg: &String, args: &mut T) -> Result<bool> {
@@ -57,10 +57,10 @@ pub fn check_help_flag<T: Iterator<Item = String>>(arg: &String, args: &mut T) -
         }
         return Ok(help_flag);
     }
-    return Err(Error::InvalidArgs);
+    Err(Error::InvalidArgs)
 }
 
-pub fn catch_empty_project_list(all_projs: &Vec<PathBuf>) -> Result<()> {
+pub fn catch_empty_project_list(all_projs: &[PathBuf]) -> Result<()> {
     if all_projs.is_empty() {
         Err(Error::NoProjectsFound)
     } else {
@@ -92,7 +92,7 @@ pub fn get_paths_to_include(project_path: &PathBuf) -> Vec<PathBuf> {
         }
     }
 
-    return include_paths;
+    include_paths
 }
 
 pub fn get_project_dir() -> Result<PathBuf> {
@@ -100,7 +100,7 @@ pub fn get_project_dir() -> Result<PathBuf> {
     // unchecked for `PROJECTS_DIR`
     let profile_path = get_profile_path()?;
     let proj_dir = Path::new(&profile_path).join(PROJECTS_DIR);
-    return Ok(proj_dir);
+    Ok(proj_dir)
 }
 
 pub fn get_projects() -> Result<Projects> {
@@ -108,5 +108,5 @@ pub fn get_projects() -> Result<Projects> {
     if !proj_dir.try_exists()? {
         return Err(Error::NoProjectsFound);
     }
-    return Projects::new(proj_dir, false);
+    Projects::new(proj_dir, false)
 }

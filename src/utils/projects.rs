@@ -27,7 +27,7 @@ impl Projects {
                 projs_vec.push(entry.into_path());
             }
         }
-        return Ok(projs_vec);
+        Ok(projs_vec)
     }
     pub fn new(project_path: PathBuf, no_arg: bool) -> Result<Self> {
         let ignore_path = project_path.join(DEPLOYS_DIR);
@@ -64,8 +64,7 @@ impl Projects {
     }
     pub fn filter_project_list(&mut self, filter_string: &String) -> Vec<PathBuf> {
         self.select_initial();
-        return self
-            .dir_items
+        self.dir_items
             .clone()
             .into_iter()
             .filter(|item| {
@@ -74,9 +73,9 @@ impl Projects {
                     let x = os_name.to_str().expect("Failed to convert OsStr to str");
                     result = x.starts_with(filter_string)
                 }
-                return result;
+                result
             })
-            .collect();
+            .collect()
     }
     pub fn filter_print(&mut self, filter_string: Option<&String>, term: &Term) -> Result<()> {
         term.clear_to_end_of_screen()?;
@@ -98,7 +97,7 @@ impl Projects {
                 return Some(proj);
             }
         }
-        return None;
+        None
     }
 
     pub fn open_project_in_nvim(&self, project_name: &str) -> Result<()> {
