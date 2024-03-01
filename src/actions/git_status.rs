@@ -50,19 +50,18 @@ pub struct Branch {
 fn parse_git_status_output(status_line: &'_ str, count: usize) -> Option<Branch> {
     // parse output of first line of git status -b -s
     // ## main...remotes/origin/main [ahead 1, behind 2]
-    let (_ignore_bangs, branch_details) = status_line.split_once(" ")?;
+    let (_ignore_bangs, branch_details) = status_line.split_once(' ')?;
     if branch_details.starts_with("No commits") {
         return None;
     }
     let mut ahead_of_remote = 0;
     let mut behind_of_remote = 0;
-    let local_clean_worktree = if count > 0 { false } else { true };
+    let local_clean_worktree = count == 0;
 
-    if let Some((_branch_name, branch_status)) = branch_details.split_once(" ") {
-        let mut x = branch_status.chars();
+    if let Some((_branch_name, branch_status)) = branch_details.split_once(' ') {
         let mut buf = String::new();
         let mut is_ahead = true;
-        while let Some(ch) = x.next() {
+        for ch in branch_status.chars() {
             match ch {
                 '[' => {}
                 ']' | ',' => {
@@ -104,22 +103,20 @@ fn run_git_status(path: &PathBuf) -> Option<GitProject> {
         .output()
         .expect("git should be installed");
     if let Some(code) = output.status.code() {
-        match code {
-            0 => {
-                let command_output = String::from_utf8_lossy(&output.stdout);
-                let mut lines = command_output.lines();
-                let status_line = lines.nth(0)?; // `nth` consumes the Line
-                let remaning_lines = lines.count();
-                let branch = parse_git_status_output(status_line, remaning_lines);
-                if let Some(branch) = branch {
-                    return Some(GitProject {
-                        path: path.to_owned(),
-                        branch,
-                    });
-                }
-                return None;
+        if code == 0 {
+            // success case
+            let command_output = String::from_utf8_lossy(&output.stdout);
+            let mut lines = command_output.lines();
+            let status_line = lines.next()?;
+            let remaning_lines = lines.count();
+            let branch = parse_git_status_output(status_line, remaning_lines);
+            if let Some(branch) = branch {
+                return Some(GitProject {
+                    path: path.to_owned(),
+                    branch,
+                });
             }
-            _ => {}
+            return None;
         };
     }
     None
@@ -143,7 +140,7 @@ fn show_output(proj: Option<GitProject>) {
             proj_status.push("DIRTY");
         }
         if !proj_status.is_empty() {
-            println!("{:-<25}>{}", file_name, format!("{:?}", proj_status));
+            println!("{:-<25}>{:?}", file_name, proj_status);
         }
     }
 }
@@ -224,7 +221,7 @@ impl Drop for Executor {
 fn gitstatus_on_multiple_threads(paths: Vec<PathBuf>) -> Result<Vec<Option<GitProject>>> {
     let num_threads = 6;
     let pool = Executor::run(num_threads, paths);
-    let lock = Arc::into_inner(pool).ok_or(Error::FetchStatusError)?;
-    let data = lock.into_inner().map_err(|_| Error::FetchStatusError)?;
+    let lock = Arc::into_inner(pool).ok_or(Error::FetchStatus)?;
+    let data = lock.into_inner().map_err(|_| Error::FetchStatus)?;
     Ok(data)
 }

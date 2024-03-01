@@ -1,8 +1,9 @@
 #[cfg(test)]
-mod tests {
+mod argaction_tests {
     use crate::{
         actions::{
             create_layout::CreateLayout,
+            git_status::GitStatusAction,
             list_projects::ListAction,
             main_help::MainHelpAction,
             open_in_nvim::OpAction,
@@ -39,9 +40,8 @@ mod tests {
 
         // --list --help <something more>
         let mut args = ["--list".to_owned(), "--help".to_owned(), "x".to_owned()].into_iter();
-        match process_arg_command(&mut args) {
-            Ok(_) => assert!(false),
-            Err(_) => assert!(true),
+        if process_arg_command(&mut args).is_ok() {
+            panic!()
         }
     }
 
@@ -61,9 +61,8 @@ mod tests {
 
         // --create --help <something more>
         let mut args = ["--list".to_owned(), "--help".to_owned(), "y".to_owned()].into_iter();
-        match process_arg_command(&mut args) {
-            Ok(_) => assert!(false),
-            Err(_) => assert!(true),
+        if process_arg_command(&mut args).is_ok() {
+            panic!()
         }
     }
 
@@ -93,9 +92,8 @@ mod tests {
 
         // project --help <something more>
         let mut args = ["project".to_owned(), "--help".to_owned(), "x".to_owned()].into_iter();
-        match process_arg_command(&mut args) {
-            Ok(_) => assert!(false),
-            Err(_) => assert!(true),
+        if process_arg_command(&mut args).is_ok() {
+            panic!()
         }
     }
 
@@ -135,9 +133,8 @@ mod tests {
             "--print".to_owned(),
         ]
         .into_iter();
-        match process_arg_command(&mut args) {
-            Ok(_) => assert!(false),
-            Err(_) => assert!(true),
+        if process_arg_command(&mut args).is_ok() {
+            panic!()
         }
     }
 
@@ -158,7 +155,7 @@ mod tests {
         let some_existing_path = "/invalid/path".to_owned();
         let mut args = ["--add".to_owned(), some_existing_path.clone()].into_iter();
         let act = process_arg_command(&mut args).is_ok();
-        assert_eq!(act, false);
+        assert!(!act);
 
         // --add --help
         let mut args = ["--add".to_owned(), "--help".to_owned()].into_iter();
@@ -208,6 +205,30 @@ mod tests {
         let act = process_arg_command(&mut args).unwrap();
         let pop_args = PopAction { help: true };
         let exp = ArgAction::PopFromOpInclude(pop_args);
+        assert_eq!(act, exp);
+    }
+
+    #[test]
+    fn test_git_status_action() {
+        // --git-status
+        let mut args = ["--git-status".to_owned()].into_iter();
+        let act = process_arg_command(&mut args).unwrap();
+        let git_status_action = GitStatusAction { help: false };
+        let exp = ArgAction::GetGitStatus(git_status_action);
+        assert_eq!(act, exp);
+
+        // -g
+        let mut args = ["-g".to_owned()].into_iter();
+        let act = process_arg_command(&mut args).unwrap();
+        let git_status_action = GitStatusAction { help: false };
+        let exp = ArgAction::GetGitStatus(git_status_action);
+        assert_eq!(act, exp);
+
+        // --git-status --help
+        let mut args = ["--git-status".to_owned(), "--help".to_owned()].into_iter();
+        let act = process_arg_command(&mut args).unwrap();
+        let pop_args = GitStatusAction { help: true };
+        let exp = ArgAction::GetGitStatus(pop_args);
         assert_eq!(act, exp);
     }
 }
