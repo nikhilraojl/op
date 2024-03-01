@@ -62,7 +62,7 @@ impl ActionTrait for PopAction {
             let mut lines = file_buf.lines().peekable();
             if lines.clone().count() == 0 {
                 println!("Nothing to pop");
-                return Ok(())
+                return Ok(());
             }
 
             let mut popped_line = "";
@@ -84,7 +84,7 @@ impl ActionTrait for PopAction {
 
             match answer.trim_end() {
                 "y" | "Y" | "Yes" | "yes" => {
-                    // buffer containing everything excluding last line for 
+                    // buffer containing everything excluding last line for
                     // writing back to file
                     let buf = &file_buf[0..bytes_to_keep];
                     write(&opinclude_file, buf)?;

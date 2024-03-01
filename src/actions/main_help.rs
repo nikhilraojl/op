@@ -16,6 +16,7 @@ impl HelpTrait for MainHelpAction {
         println!("op <project_name> --print|-p  : Prints project path to stdout");
         println!("op --add|-a <path>            : Adds a path to `.opinclude`");
         println!("op --pop|-o                   : Pops last path from `.opinclude`");
+        println!("op --git-status|-g            : Shows uncommitted and non-sync status of all projects. Ignores git uninitiated or clean");
     }
 }
 impl ActionTrait for MainHelpAction {
