@@ -4,7 +4,7 @@ use std::{fmt::Display, process::Command};
 use walkdir::WalkDir;
 
 use super::constants::DEPLOYS_DIR;
-use super::get_paths_to_include;
+use super::validate_paths;
 use crate::error::Error;
 use crate::Result;
 
@@ -29,9 +29,9 @@ impl Projects {
         }
         Ok(projs_vec)
     }
-    pub fn new(project_path: PathBuf, no_arg: bool) -> Result<Self> {
+    pub fn new(project_path: PathBuf, include_paths: Vec<String>, no_arg: bool) -> Result<Self> {
         let ignore_path = project_path.join(DEPLOYS_DIR);
-        let mut include_paths = get_paths_to_include(&project_path);
+        let mut include_paths = validate_paths(include_paths);
         let mut dir_items = Self::get_list(&project_path, &ignore_path)?;
         dir_items.append(&mut include_paths);
         dir_items.sort_by(|a, b| {

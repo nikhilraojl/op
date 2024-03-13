@@ -4,7 +4,8 @@ use std::io::Write;
 
 use crate::error::Error;
 use crate::utils::constants::OP_INCLUDE;
-use crate::utils::{get_project_dir, ActionTrait, HelpTrait};
+use crate::utils::{get_config_path, ActionTrait, HelpTrait};
+use crate::Config;
 
 #[derive(PartialEq, Debug)]
 pub struct IncludeAction {
@@ -19,19 +20,16 @@ impl HelpTrait for IncludeAction {
 }
 
 impl ActionTrait for IncludeAction {
-    fn execute(&self) -> crate::error::Result<()> {
+    fn execute(&self, _config: Config) -> crate::error::Result<()> {
         if self.help {
             self.print_help();
         } else {
-            let projects_dir = get_project_dir()?;
-            if !projects_dir.exists() {
-                return Err(Error::NoProjectsFound);
-            }
-            let mut file_opinclude = File::options()
+            let config_path = get_config_path()?;
+            let mut config_file = File::options()
                 .create(true)
                 .append(true)
-                .open(projects_dir.join(OP_INCLUDE))?;
-            writeln!(&mut file_opinclude, "{}", self.path)?;
+                .open(config_path)?;
+            writeln!(&mut config_file, "include={}", self.path)?;
         }
         Ok(())
     }
@@ -49,12 +47,12 @@ impl HelpTrait for PopAction {
 }
 
 impl ActionTrait for PopAction {
-    fn execute(&self) -> crate::error::Result<()> {
+    fn execute(&self, config: Config) -> crate::error::Result<()> {
         if self.help {
             self.print_help();
         } else {
             // A naive implementation of removing last line form `OP_INCLUDE` file
-            let opinclude_file = get_project_dir()?.join(OP_INCLUDE);
+            let opinclude_file = config.projects_dir.join(OP_INCLUDE);
             if !opinclude_file.exists() {
                 return Err(Error::NoProjectsFound);
             }

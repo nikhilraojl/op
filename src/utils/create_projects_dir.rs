@@ -1,11 +1,9 @@
-use std::fs::DirBuilder;
-use std::path::Path;
+use std::{fs::DirBuilder, path::PathBuf};
 
 use crate::error::Result;
-use crate::utils::get_profile_path;
 use console::{Key, Term};
 
-pub fn start() -> Result<()> {
+pub fn start(path: PathBuf) -> Result<()> {
     let term = Term::stdout();
     term.hide_cursor()?;
     term.write_line("No directory named '[Pp]rojects' found")?;
@@ -14,13 +12,8 @@ pub fn start() -> Result<()> {
     let read_key = term.read_key().expect("Expected some key to be pressed");
     if let Key::Char(ch) = read_key {
         if ch == 'y' || ch == 'Y' {
-            let profile = get_profile_path()?;
-            let profile_path = Path::new(&profile);
-
-            let path = profile_path.join("Projects");
-
-            DirBuilder::new().create(path)?;
-            println!("Done creating 'Projects' in {:?}", profile_path);
+            DirBuilder::new().create(&path)?;
+            println!("Done creating {:?}", path.to_string_lossy());
             println!("You can now use --create option to create language dirs");
             return Ok(());
         }

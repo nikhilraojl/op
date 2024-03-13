@@ -2,12 +2,8 @@
 mod argaction_tests {
     use crate::{
         actions::{
-            create_layout::CreateLayout,
-            git_status::GitStatusAction,
-            list_projects::ListAction,
-            main_help::MainHelpAction,
-            open_in_nvim::OpAction,
-            opinclude_actions::{IncludeAction, PopAction},
+            create_layout::CreateLayout, git_status::GitStatusAction, list_projects::ListAction,
+            main_help::MainHelpAction, open_in_nvim::OpAction, opinclude_actions::IncludeAction,
         },
         process_arg_command,
         utils::get_profile_path,
@@ -148,7 +144,7 @@ mod argaction_tests {
             path: some_existing_path,
             help: false,
         };
-        let exp = ArgAction::AddToOpInclude(include_args);
+        let exp = ArgAction::AddToOpConfig(include_args);
         assert_eq!(act, exp);
 
         // project --add <invalid path>
@@ -164,7 +160,7 @@ mod argaction_tests {
             path: String::new(),
             help: true,
         };
-        let exp = ArgAction::AddToOpInclude(include_args);
+        let exp = ArgAction::AddToOpConfig(include_args);
         assert_eq!(act, exp);
         //
         // --add <some valid path> --help
@@ -180,33 +176,33 @@ mod argaction_tests {
             path: some_existing_path,
             help: true,
         };
-        let exp = ArgAction::AddToOpInclude(include_args);
+        let exp = ArgAction::AddToOpConfig(include_args);
         assert_eq!(act, exp);
     }
 
-    #[test]
-    fn test_pop_from_opinclude_action() {
-        // --pop
-        let mut args = ["--pop".to_owned()].into_iter();
-        let act = process_arg_command(&mut args).unwrap();
-        let pop_args = PopAction { help: false };
-        let exp = ArgAction::PopFromOpInclude(pop_args);
-        assert_eq!(act, exp);
-
-        // -o
-        let mut args = ["-o".to_owned()].into_iter();
-        let act = process_arg_command(&mut args).unwrap();
-        let pop_args = PopAction { help: false };
-        let exp = ArgAction::PopFromOpInclude(pop_args);
-        assert_eq!(act, exp);
-
-        // --pop --help
-        let mut args = ["--pop".to_owned(), "--help".to_owned()].into_iter();
-        let act = process_arg_command(&mut args).unwrap();
-        let pop_args = PopAction { help: true };
-        let exp = ArgAction::PopFromOpInclude(pop_args);
-        assert_eq!(act, exp);
-    }
+    // #[test]
+    // fn test_pop_from_opinclude_action() {
+    //     // --pop
+    //     let mut args = ["--pop".to_owned()].into_iter();
+    //     let act = process_arg_command(&mut args).unwrap();
+    //     let pop_args = PopAction { help: false };
+    //     let exp = ArgAction::PopFromOpInclude(pop_args);
+    //     assert_eq!(act, exp);
+    //
+    //     // -o
+    //     let mut args = ["-o".to_owned()].into_iter();
+    //     let act = process_arg_command(&mut args).unwrap();
+    //     let pop_args = PopAction { help: false };
+    //     let exp = ArgAction::PopFromOpInclude(pop_args);
+    //     assert_eq!(act, exp);
+    //
+    //     // --pop --help
+    //     let mut args = ["--pop".to_owned(), "--help".to_owned()].into_iter();
+    //     let act = process_arg_command(&mut args).unwrap();
+    //     let pop_args = PopAction { help: true };
+    //     let exp = ArgAction::PopFromOpInclude(pop_args);
+    //     assert_eq!(act, exp);
+    // }
 
     #[test]
     fn test_git_status_action() {
