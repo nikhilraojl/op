@@ -1,5 +1,6 @@
 use crate::error::{Error, Result};
-use crate::utils::{get_projects, ActionTrait, HelpTrait};
+use crate::utils::{get_projects_2, ActionTrait, HelpTrait};
+use crate::Config;
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::{
@@ -17,11 +18,11 @@ impl HelpTrait for GitStatusAction {
     }
 }
 impl ActionTrait for GitStatusAction {
-    fn execute(&self) -> Result<()> {
+    fn execute(&self, config: Config) -> Result<()> {
         if self.help {
             self.print_help();
         } else {
-            let projects = get_projects()?;
+            let projects = get_projects_2(config)?;
             let all_git_projs = gitstatus_on_multiple_threads(projects.dir_items)?;
             for proj in all_git_projs {
                 show_output(proj);

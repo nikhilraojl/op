@@ -1,5 +1,6 @@
 use crate::error::Result;
 use crate::utils::{ActionTrait, HelpTrait};
+use crate::Config;
 
 #[derive(Debug, PartialEq)]
 pub struct MainHelpAction;
@@ -15,12 +16,12 @@ impl HelpTrait for MainHelpAction {
         println!("op <project_name>             : Opens project directly in neovim");
         println!("op <project_name> --print|-p  : Prints project path to stdout");
         println!("op --add|-a <path>            : Adds a path to `.opinclude`");
-        println!("op --pop|-o                   : Pops last path from `.opinclude`");
+        // println!("op --pop|-o                   : Pops last path from `.opinclude`");
         println!("op --git-status|-g            : Shows uncommitted and non-sync status of all projects. Ignores git uninitiated or clean");
     }
 }
 impl ActionTrait for MainHelpAction {
-    fn execute(&self) -> Result<()> {
+    fn execute(&self, _config: Config) -> Result<()> {
         self.print_help();
         Ok(())
     }

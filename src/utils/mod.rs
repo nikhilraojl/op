@@ -3,18 +3,18 @@ pub mod create_projects_dir;
 pub mod projects;
 pub mod select_ui;
 
-use constants::{OP_INCLUDE, PROJECTS_DIR};
 use projects::Projects;
-use std::{
-    env::consts::OS,
-    fs::read_to_string,
-    path::{Path, PathBuf},
+use std::{env::consts::OS, path::PathBuf};
+
+use crate::{
+    error::{Error, Result},
+    Config,
 };
 
-use crate::error::{Error, Result};
+use self::constants::OP_CONFIG;
 
 pub trait ActionTrait {
-    fn execute(&self) -> Result<()>;
+    fn execute(&self, config: Config) -> Result<()>;
 }
 pub trait HelpTrait {
     fn print_help(&self);
@@ -76,18 +76,11 @@ pub fn get_profile_path() -> Result<String> {
     }
 }
 
-pub fn get_paths_to_include(project_path: &PathBuf) -> Vec<PathBuf> {
-    let op_include = Path::new(project_path).join(OP_INCLUDE);
+pub fn validate_paths(paths: Vec<String>) -> Vec<PathBuf> {
     let mut include_paths: Vec<PathBuf> = Vec::new();
-    if !op_include.exists() {
-        return include_paths;
-    }
-    let file = read_to_string(op_include).expect("Missing `.opinclude` in HOME/projects");
-
-    for line in file.lines() {
-        let path = PathBuf::from(line);
-        if path.exists() && !path.starts_with("#") {
-            // entries `#` are not considered
+    for path in paths {
+        let path = PathBuf::from(path);
+        if path.exists() {
             include_paths.push(path);
         }
     }
@@ -95,18 +88,16 @@ pub fn get_paths_to_include(project_path: &PathBuf) -> Vec<PathBuf> {
     include_paths
 }
 
-pub fn get_project_dir() -> Result<PathBuf> {
-    // returns error only if profile doesn't exist
-    // unchecked for `PROJECTS_DIR`
-    let profile_path = get_profile_path()?;
-    let proj_dir = Path::new(&profile_path).join(PROJECTS_DIR);
-    Ok(proj_dir)
-}
-
-pub fn get_projects() -> Result<Projects> {
-    let proj_dir = get_project_dir()?;
+pub fn get_projects_2(config: Config) -> Result<Projects> {
+    let proj_dir = config.projects_dir;
     if !proj_dir.try_exists()? {
         return Err(Error::NoProjectsFound);
     }
-    Projects::new(proj_dir, false)
+    Projects::new(proj_dir, config.include, false)
+}
+
+pub fn get_config_path() -> Result<PathBuf> {
+    let home_dir = PathBuf::from(&get_profile_path()?);
+    let config_file = home_dir.join(OP_CONFIG);
+    Ok(config_file)
 }

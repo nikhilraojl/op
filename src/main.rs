@@ -3,46 +3,22 @@ mod error;
 mod tests;
 mod utils;
 
-use std::path::{Path, PathBuf};
+use std::fs::read_to_string;
+use std::path::PathBuf;
 
 use actions::create_layout::CreateLayout;
 use actions::git_status::GitStatusAction;
 use actions::list_projects::ListAction;
 use actions::main_help::MainHelpAction;
 use actions::open_in_nvim::OpAction;
-use actions::opinclude_actions::{IncludeAction, PopAction};
+use actions::opinclude_actions::IncludeAction;
 use error::{Error, Result};
-use utils::constants::PROJECTS_DIR;
+use utils::constants::{DEPLOYS_DIR, OP_CONFIG, PROJECTS_DIR};
 use utils::create_projects_dir;
 use utils::projects::Projects;
 use utils::select_ui::render_loop;
 use utils::{catch_empty_project_list, check_help_flag, check_valid_flag, get_profile_path};
 use utils::{ActionTrait, ShortFlag};
-
-#[derive(Debug, PartialEq)]
-enum ArgAction<'a> {
-    ListAllProjects(ListAction),
-    OpenProject(OpAction),
-    MainHelp(MainHelpAction),
-    CreateLayout(CreateLayout<'a>),
-    AddToOpInclude(IncludeAction),
-    PopFromOpInclude(PopAction),
-    GetGitStatus(GitStatusAction),
-}
-
-impl<'a> ArgAction<'a> {
-    fn execute(&self) -> Result<()> {
-        match self {
-            Self::MainHelp(action) => action.execute(),
-            Self::OpenProject(action) => action.execute(),
-            Self::ListAllProjects(action) => action.execute(),
-            Self::CreateLayout(action) => action.execute(),
-            Self::AddToOpInclude(action) => action.execute(),
-            Self::PopFromOpInclude(action) => action.execute(),
-            Self::GetGitStatus(action) => action.execute(),
-        }
-    }
-}
 
 fn main() {
     if let Err(err) = run() {
@@ -50,20 +26,89 @@ fn main() {
     }
 }
 
+#[derive(Debug, Default)]
+struct Config {
+    projects_dir: PathBuf,
+    deploys_dir: String,
+    include: Vec<String>,
+}
+
+impl Config {
+    fn new() -> Result<Self> {
+        let home_dir = PathBuf::from(&get_profile_path()?);
+        let config_file = home_dir.join(OP_CONFIG);
+
+        let mut config = Config {
+            projects_dir: home_dir.join(PROJECTS_DIR),
+            deploys_dir: DEPLOYS_DIR.to_owned(),
+            include: Vec::new(),
+        };
+        if config_file.exists() {
+            for line in read_to_string(config_file)?.lines() {
+                if line.starts_with('#') {
+                    break;
+                }
+                if let Some((key, value)) = line.split_once('=') {
+                    match key {
+                        "projects_dir" => {
+                            config.projects_dir = PathBuf::from(value);
+                        }
+                        "deploys_dir" => {
+                            config.deploys_dir = value.to_owned();
+                        }
+                        "include" => {
+                            config.include.push(value.to_owned());
+                        }
+                        _ => {}
+                    }
+                }
+            }
+        }
+        Ok(config)
+    }
+}
+
+#[derive(Debug, PartialEq)]
+enum ArgAction<'a> {
+    MainHelp(MainHelpAction),
+    ListAllProjects(ListAction),
+    CreateLayout(CreateLayout<'a>),
+    OpenProject(OpAction),
+    AddToOpConfig(IncludeAction),
+    //TODO: reimplement `--pop`
+    // PopFromOpInclude(PopAction),
+    GetGitStatus(GitStatusAction),
+}
+
+impl<'a> ArgAction<'a> {
+    fn execute(&self) -> Result<()> {
+        let config = Config::new()?;
+        match self {
+            Self::MainHelp(action) => action.execute(config),
+            Self::ListAllProjects(action) => action.execute(config),
+            Self::CreateLayout(action) => action.execute(config),
+            Self::OpenProject(action) => action.execute(config),
+            Self::AddToOpConfig(action) => action.execute(config),
+            // Self::PopFromOpInclude(action) => action.execute(config),
+            Self::GetGitStatus(action) => action.execute(config),
+        }
+    }
+}
+
 fn run() -> Result<()> {
     let mut args = std::env::args();
 
     if args.len() == 1 {
-        let profile_path = get_profile_path()?;
-        let proj_dir = Path::new(&profile_path).join(PROJECTS_DIR);
+        let config = Config::new()?;
+        let proj_dir = config.projects_dir;
 
         if !proj_dir.try_exists()? {
             // early return  as `PROJECTS_DIR` is just created and
             // will contain nothing
-            return create_projects_dir::start();
+            return create_projects_dir::start(proj_dir);
         }
 
-        let mut projects = Projects::new(proj_dir, true)?;
+        let mut projects = Projects::new(proj_dir, config.include, true)?;
         catch_empty_project_list(&projects.filtered_items)?;
         render_loop(&mut projects)?;
     } else {
@@ -118,15 +163,15 @@ fn process_arg_command<T: Iterator<Item = String>>(args: &mut T) -> Result<ArgAc
             }
             None => return Err(Error::InvalidArgs),
         }
-        return Ok(ArgAction::AddToOpInclude(include_args));
+        return Ok(ArgAction::AddToOpConfig(include_args));
     }
-    if check_valid_flag(&arg, "pop", ShortFlag::Value('o'))? {
-        let mut pop_args = PopAction { help: false };
-        if let Some(iarg) = &args.next() {
-            pop_args.help = check_help_flag(iarg, args)?;
-        }
-        return Ok(ArgAction::PopFromOpInclude(pop_args));
-    }
+    // if check_valid_flag(&arg, "pop", ShortFlag::Value('o'))? {
+    //     let mut pop_args = PopAction { help: false };
+    //     if let Some(iarg) = &args.next() {
+    //         pop_args.help = check_help_flag(iarg, args)?;
+    //     }
+    //     return Ok(ArgAction::PopFromOpInclude(pop_args));
+    // }
 
     if check_valid_flag(&arg, "git-status", ShortFlag::Value('g'))? {
         let mut git_status_args = GitStatusAction { help: false };

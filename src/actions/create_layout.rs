@@ -1,12 +1,9 @@
 use std::fs::DirBuilder;
-use std::fs::File;
-use std::io::Write;
 
 use crate::error::Result;
-use crate::utils::constants::{OP_INCLUDE, PROJECTS_DIR};
-use crate::utils::get_project_dir;
 use crate::utils::ActionTrait;
 use crate::utils::HelpTrait;
+use crate::Config;
 
 #[derive(Debug, PartialEq)]
 pub struct CreateLayout<'a> {
@@ -21,36 +18,22 @@ impl CreateLayout<'_> {
             help: false,
         }
     }
-    fn create_lang_dirs(&self) -> Result<()> {
-        let path = get_project_dir()?;
+    fn create_lang_dirs(&self, config: Config) -> Result<()> {
+        let path = config.projects_dir;
         let recurse = !path.exists();
         if recurse {
-            println!("Creating '{PROJECTS_DIR}' directory");
+            println!("Creating directory '{}'", path.to_string_lossy());
         }
         // create lang dirs
         for lang in &self.lang_types {
             let path = path.join(lang);
             if path.exists() {
-                println!("'{PROJECTS_DIR}/{lang}' directory already exists. SKIPPING");
+                println!("'{lang}' sub-directory already exists. SKIPPING");
             } else {
-                println!("Creating '{PROJECTS_DIR}/{lang}' directory");
+                println!("Creating sub-directory'{lang}'");
                 DirBuilder::new().recursive(recurse).create(path)?;
             }
         }
-        // create `.opinclude` file. `path` is supposed to exist at this point
-        let op_include_path = path.join(OP_INCLUDE);
-        if let Ok(mut f) = File::options()
-            .write(true)
-            .create_new(true)
-            .open(op_include_path)
-        {
-            println!("Creating '{PROJECTS_DIR}/{OP_INCLUDE}' file");
-            let _ = f.write(
-                b"# include absolute paths to directories\n# lines starting with `#` are ignored\n",
-            )?;
-        } else {
-            println!("'{OP_INCLUDE}' directory exists. SKIPPING");
-        };
         println!("Done");
         Ok(())
     }
@@ -64,11 +47,11 @@ impl HelpTrait for CreateLayout<'_> {
 }
 
 impl ActionTrait for CreateLayout<'_> {
-    fn execute(&self) -> Result<()> {
+    fn execute(&self, config: Config) -> Result<()> {
         if self.help {
             self.print_help();
         } else {
-            return self.create_lang_dirs();
+            return self.create_lang_dirs(config);
         }
         Ok(())
     }

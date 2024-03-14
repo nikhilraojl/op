@@ -1,5 +1,6 @@
 use crate::error::Result;
-use crate::utils::{catch_empty_project_list, get_projects, ActionTrait, HelpTrait};
+use crate::utils::{catch_empty_project_list, get_projects_2, ActionTrait, HelpTrait};
+use crate::Config;
 
 #[derive(Default, Debug, PartialEq)]
 pub struct ListAction {
@@ -12,11 +13,11 @@ impl HelpTrait for ListAction {
 }
 
 impl ActionTrait for ListAction {
-    fn execute(&self) -> Result<()> {
+    fn execute(&self, config: Config) -> Result<()> {
         if self.help {
             self.print_help();
         } else {
-            let projects = get_projects()?;
+            let projects = get_projects_2(config)?;
             catch_empty_project_list(&projects.filtered_items)?;
             println!("{}", projects);
         }
