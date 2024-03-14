@@ -75,8 +75,6 @@ enum ArgAction<'a> {
     CreateLayout(CreateLayout<'a>),
     OpenProject(OpAction),
     AddToOpConfig(IncludeAction),
-    //TODO: reimplement `--pop`
-    // PopFromOpInclude(PopAction),
     GetGitStatus(GitStatusAction),
 }
 
@@ -89,7 +87,6 @@ impl<'a> ArgAction<'a> {
             Self::CreateLayout(action) => action.execute(config),
             Self::OpenProject(action) => action.execute(config),
             Self::AddToOpConfig(action) => action.execute(config),
-            // Self::PopFromOpInclude(action) => action.execute(config),
             Self::GetGitStatus(action) => action.execute(config),
         }
     }
@@ -165,13 +162,6 @@ fn process_arg_command<T: Iterator<Item = String>>(args: &mut T) -> Result<ArgAc
         }
         return Ok(ArgAction::AddToOpConfig(include_args));
     }
-    // if check_valid_flag(&arg, "pop", ShortFlag::Value('o'))? {
-    //     let mut pop_args = PopAction { help: false };
-    //     if let Some(iarg) = &args.next() {
-    //         pop_args.help = check_help_flag(iarg, args)?;
-    //     }
-    //     return Ok(ArgAction::PopFromOpInclude(pop_args));
-    // }
 
     if check_valid_flag(&arg, "git-status", ShortFlag::Value('g'))? {
         let mut git_status_args = GitStatusAction { help: false };
