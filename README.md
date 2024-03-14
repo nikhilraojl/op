@@ -1,14 +1,17 @@
 ## About
+
 A simple program written in rust to quickly open projects in neovim. Works on both windows and linux.
 
 ## Usage
 
 #### Basic
-Just run `op` command and a list UI shows up, select a project to open with neovim. 
+
+Just run `op` command and a list UI shows up, select a project to open with neovim.
 Use `escape` to exit the UI
 ![](./media/op_nvim.png)
 
-Below is the layout expected for this program to run. Only "project_dir" level in the layout is detected by this program
+Below is the layout expected for this program to run by default. Only "project_dir" level in the layout is detected by this program
+
 ```
 home
     |-Projects
@@ -18,22 +21,37 @@ home
         |-language-2
             |- project_dir
             |- project_dir
-        |-.opinclude
+        |-language-3
+            |- project_dir
+            |- project_dir
 ```
-Use `.opinclude` file to add any directory which is not in the layout. Lines starting with `#` are ignored 
-```
-# /path/to/project1 
-/path/to/project2
+
+You can configure `Projects` location and also include additional directories with `.opconfig`. Example config below
+
+```ini
+# specifying the base `Projects` location (lines starting with `#` are ignored)
+projects_dir=/path/to/dir
+
+# specify additional `project_dir` which may not be a child of above `projects_dir`
+# but want to be detected by this program anyway
+include=/path/to/project_dir
+
+# add additional `project_dir`s with a new include line
+include=/path/to/project_dir_2
 ```
 
 #### Main options
-Use `op [project_name]`: to directly open the project in nvim. 
+
+`op [--help|-h]`: to show available commands & options
+
+`op [project_name]`: to directly open the project_dir in nvim.
 This becomes more powerfull when combined with tab completion.
 See below for setting up autocomplete for powershell & bash
 
-Use `op [--create|-c]`: to create the above mentioned layout.
-This creates five directories with names python, javascript, rust, go, plain_txt for organizing & a file `.opinclude` in your `$HOME/Projects` directory\
-*NOTE: No actual projects inside the language directories will be created, BYOProject*
+`op [--create|-c]`: to create the above mentioned layout.
+This creates five directories with names python, javascript, rust, go, plain_txt for organizing in your `Projects` directory\
+_NOTE: No additional directories inside the language directories will be created, BYOProject_
+
 ```
 home
     |-Projects
@@ -42,22 +60,35 @@ home
         |-rust
         |-go
         |-plain_txt
-        |-.opinclude
 ```
 
-Use `op [--list|-l]`: to list all the projects
+`op [--list|-l]`: to list all the project_dirs
 
-Use `op [--print|-p]`: to print full path of the project flag. The output can be piped in a shell. Example
+`op [--print|-p]`: to print full path of the project_dir flag. The output can be piped in a shell. Example
+
 ```
-op test_proj -p | cd    in powershell 
+op test_proj -p | cd    in powershell
 or
-cd `op tmp -p`          in bash 
+cd `op tmp -p`          in bash
 ```
 
-Use `op [--help|-h]`: to show available commands & options
+`op [--add|-a] <path>`: adds a new line `include=<path>` to `.opconfig`. Useful for quickly adding project_dirs from cli instead of doing it manually
+
+`op [--git-status|-g]`: prints out git status of all the `project_dir`s detected. Example output
+
+```
+project_dir_1--------------->["DIRTY"] // some local uncommitted changes are present
+project_dir_2--------------->["NOT IN SYNC"] // HEAD & remote are not at the same commit
+project_dir_3--------------->["DIRTY", "NOT IN SYNC"] // both of above
+```
+
+_NOTE: Git uninitiated and git directories with clean worktrees are ignored in the output._\
+_NOTE: Only the locally checked out branch status is considered_
 
 ## Autocomplete for shells
+
 For tab completion in powershell you can add the below script to your pprofile
+
 ```powershell
 $opCommandCompletion = {
     param($stringMatch)
@@ -71,6 +102,7 @@ Register-ArgumentCompleter -Native -CommandName op -ScriptBlock $opCommandComple
 ```
 
 For tab completion in bash you can add the below script to your rc file
+
 ```bash
 _op_completion() {
 	if [ "${#COMP_WORDS[@]}" != "2" ]; then
@@ -83,6 +115,7 @@ complete -F _op_completion op
 ```
 
 ## Build
+
 - requirements: rustc, cargo(you can have both by installing `rustup`), neovim
 - clone the repo and cd into it
 - `cargo test` for running tests

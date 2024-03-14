@@ -180,30 +180,6 @@ mod argaction_tests {
         assert_eq!(act, exp);
     }
 
-    // #[test]
-    // fn test_pop_from_opinclude_action() {
-    //     // --pop
-    //     let mut args = ["--pop".to_owned()].into_iter();
-    //     let act = process_arg_command(&mut args).unwrap();
-    //     let pop_args = PopAction { help: false };
-    //     let exp = ArgAction::PopFromOpInclude(pop_args);
-    //     assert_eq!(act, exp);
-    //
-    //     // -o
-    //     let mut args = ["-o".to_owned()].into_iter();
-    //     let act = process_arg_command(&mut args).unwrap();
-    //     let pop_args = PopAction { help: false };
-    //     let exp = ArgAction::PopFromOpInclude(pop_args);
-    //     assert_eq!(act, exp);
-    //
-    //     // --pop --help
-    //     let mut args = ["--pop".to_owned(), "--help".to_owned()].into_iter();
-    //     let act = process_arg_command(&mut args).unwrap();
-    //     let pop_args = PopAction { help: true };
-    //     let exp = ArgAction::PopFromOpInclude(pop_args);
-    //     assert_eq!(act, exp);
-    // }
-
     #[test]
     fn test_git_status_action() {
         // --git-status
