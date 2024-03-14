@@ -3,14 +3,13 @@ use std::path::PathBuf;
 use std::{fmt::Display, process::Command};
 use walkdir::WalkDir;
 
-use super::constants::DEPLOYS_DIR;
 use super::validate_paths;
 use crate::error::Error;
-use crate::Result;
+use crate::{Config, Result};
 
 #[derive(Debug)]
 pub struct Projects {
-    pub project_path: PathBuf,
+    // pub project_path: PathBuf,
     pub selected: usize,
     pub dir_items: Vec<PathBuf>,
     pub filtered_items: Vec<PathBuf>,
@@ -29,11 +28,22 @@ impl Projects {
         }
         Ok(projs_vec)
     }
-    pub fn new(project_path: PathBuf, include_paths: Vec<String>, no_arg: bool) -> Result<Self> {
-        let ignore_path = project_path.join(DEPLOYS_DIR);
-        let mut include_paths = validate_paths(include_paths);
-        let mut dir_items = Self::get_list(&project_path, &ignore_path)?;
+    pub fn new(config: Config, no_arg: bool) -> Result<Self> {
+        let project_root = config.projects_root;
+        let ignore_path = project_root.join(config.ignore_dir);
+
+        let mut include_paths = validate_paths(config.include);
+        // from `project_root`
+        let mut dir_items = Self::get_list(&project_root, &ignore_path)?;
+
+        // from the configured `extra_project_root`s
+        for extra_project_root in config.extra_roots {
+            dir_items.extend(Self::get_list(&extra_project_root, &ignore_path)?);
+        }
+
+        // from the configured `include`s
         dir_items.append(&mut include_paths);
+
         dir_items.sort_by(|a, b| {
             a.file_name()
                 .expect("Failed to get filename OsStr")
@@ -41,7 +51,7 @@ impl Projects {
                 .expect("Failed to sort `Projects` vec")
         });
         let projects = Self {
-            project_path,
+            // project_path,
             selected: 0,
             filtered_items: dir_items.clone(),
             dir_items,

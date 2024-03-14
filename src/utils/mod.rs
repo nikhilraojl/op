@@ -89,11 +89,11 @@ pub fn validate_paths(paths: Vec<String>) -> Vec<PathBuf> {
 }
 
 pub fn get_projects_2(config: Config) -> Result<Projects> {
-    let proj_dir = config.projects_dir;
+    let proj_dir = &config.projects_root;
     if !proj_dir.try_exists()? {
         return Err(Error::NoProjectsFound);
     }
-    Projects::new(proj_dir, config.include, false)
+    Projects::new(config, false)
 }
 
 pub fn get_config_path() -> Result<PathBuf> {
