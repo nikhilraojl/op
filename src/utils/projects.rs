@@ -121,14 +121,15 @@ impl Projects {
             nvim_process.status()?;
             println!("Closing project {:?}", project_name);
             std::process::exit(0);
-        } else {
-            if self.filtered_items.is_empty() {
-                return Err(Error::NoProjectsFound);
-            }
-            println!("No matching projects found. Only below projects are available");
-            println!("{self}");
-            Ok(())
         }
+
+        if self.filtered_items.is_empty() {
+            return Err(Error::NoProjectsFound);
+        }
+
+        println!("No matching projects found. Only below projects are available");
+        println!("{self}");
+        Ok(())
     }
 
     pub fn print_work_dir(&self, project_name: &str) {

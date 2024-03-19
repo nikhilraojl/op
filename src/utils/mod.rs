@@ -88,7 +88,7 @@ pub fn validate_paths(paths: Vec<String>) -> Vec<PathBuf> {
     include_paths
 }
 
-pub fn get_projects_2(config: Config) -> Result<Projects> {
+pub fn get_projects(config: Config) -> Result<Projects> {
     let proj_dir = &config.projects_root;
     if !proj_dir.try_exists()? {
         return Err(Error::NoProjectsFound);
