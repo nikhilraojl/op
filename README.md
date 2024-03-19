@@ -6,31 +6,48 @@ A simple program written in rust to quickly open projects in neovim. Works on bo
 
 #### Basic
 
-Just run `op` command and a list UI shows up, select a project to open with neovim.
-Use `escape` to exit the UI
+Just run `op` command and a list UI shows up, navigate using arrow keys and select a project with `enter` to open it with neovim.
+Use `escape` to exit the UI\
 ![](./media/op_nvim.png)
 
-Below is the layout expected for this program to run by default. Only "project_dir" level in the layout is detected by this program
+Below is the layout expected for this program to run by default. Only 'project_dir' level in the layout is detected by this program
 
 ```
+# Reference layout
 home
     |-Projects
-        |-language-1
+        |- language_dir_1
             |- project_dir
             |- project_dir
-        |-language-2
+        |- language_dir_2
             |- project_dir
             |- project_dir
-        |-language-3
+        |- language_dir_3
             |- project_dir
             |- project_dir
+
+# Actual layout
+$HOME
+    |-Projects
+        |- rust
+            |- op
+            |- axum
+        |- python
+            |- django
+            |- py_ds_kata
 ```
 
-You can configure `Projects` location and also include additional directories with `.opconfig`. Example config below
+You can configure multiple `Projects` roots and also include additional directories outside of the layout with `.opconfig`. Example config below
 
 ```ini
 # specifying the base `Projects` location (lines starting with `#` are ignored)
 projects_dir=/path/to/dir
+
+# specifying the extra/additional `Projects`
+extra_projects_root=/differentpath/to/dir
+
+# ignore any `language_dir` level directory (NOTE: shared among all the `Project` roots)
+ignore=/path/to/language_dir
 
 # specify additional `project_dir` which may not be a child of above `projects_dir`
 # but want to be detected by this program anyway
@@ -44,7 +61,7 @@ include=/path/to/project_dir_2
 
 `op [--help|-h]`: to show available commands & options
 
-`op [project_name]`: to directly open the project_dir in nvim.
+`op [project_name]`: to directly open the 'project_dir' in nvim.
 This becomes more powerfull when combined with tab completion.
 See below for setting up autocomplete for powershell & bash
 
@@ -64,7 +81,7 @@ home
 
 `op [--list|-l]`: to list all the project_dirs
 
-`op [--print|-p]`: to print full path of the project_dir flag. The output can be piped in a shell. Example
+`op [--print|-p]`: to print full path of the 'project_dir' flag. The output can be piped in a shell. Example
 
 ```
 op test_proj -p | cd    in powershell
@@ -74,7 +91,9 @@ cd `op tmp -p`          in bash
 
 `op [--add|-a] <path>`: adds a new line `include=<path>` to `.opconfig`. Useful for quickly adding project_dirs from cli instead of doing it manually
 
-`op [--git-status|-g]`: prints out git status of all the `project_dir`s detected. Example output
+`op [--git-status|-g]`: prints out git status of all the 'project_dir's detected. Example output below\
+_NOTE: Git uninitiated and git directories with clean worktrees are ignored in the output._\
+_NOTE: Only the locally checked out branch status is considered_\
 
 ```
 project_dir_1--------------->["DIRTY"] // some local uncommitted changes are present
@@ -82,8 +101,6 @@ project_dir_2--------------->["NOT IN SYNC"] // HEAD & remote are not at the sam
 project_dir_3--------------->["DIRTY", "NOT IN SYNC"] // both of above
 ```
 
-_NOTE: Git uninitiated and git directories with clean worktrees are ignored in the output._\
-_NOTE: Only the locally checked out branch status is considered_
 
 ## Autocomplete for shells
 

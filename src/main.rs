@@ -13,7 +13,11 @@ use actions::main_help::MainHelpAction;
 use actions::open_in_nvim::OpAction;
 use actions::opinclude_actions::IncludeAction;
 use error::{Error, Result};
-use utils::constants::{DEPLOYS_DIR, OP_CONFIG, PROJECTS_DIR};
+use utils::constants::{
+    CONFIGFILE_EXTRA_PROJECTS_ROOT, CONFIGFILE_IGNORE_DIR, CONFIGFILE_INCLUDE,
+    CONFIGFILE_PROJECTS_ROOT,
+};
+use utils::constants::{DEFAULT_IGNORE_DIR, DEFAULT_PROJECTS_ROOT, OP_CONFIG};
 use utils::create_projects_dir;
 use utils::projects::Projects;
 use utils::select_ui::render_loop;
@@ -28,8 +32,9 @@ fn main() {
 
 #[derive(Debug, Default)]
 struct Config {
-    projects_dir: PathBuf,
-    deploys_dir: String,
+    projects_root: PathBuf,
+    extra_roots: Vec<PathBuf>,
+    ignore_dir: String,
     include: Vec<String>,
 }
 
@@ -39,25 +44,29 @@ impl Config {
         let config_file = home_dir.join(OP_CONFIG);
 
         let mut config = Config {
-            projects_dir: home_dir.join(PROJECTS_DIR),
-            deploys_dir: DEPLOYS_DIR.to_owned(),
+            projects_root: home_dir.join(DEFAULT_PROJECTS_ROOT),
+            extra_roots: Vec::new(),
+            ignore_dir: DEFAULT_IGNORE_DIR.to_owned(),
             include: Vec::new(),
         };
         if config_file.exists() {
             for line in read_to_string(config_file)?.lines() {
                 if line.starts_with('#') {
-                    break;
+                    continue;
                 }
                 if let Some((key, value)) = line.split_once('=') {
                     match key {
-                        "projects_dir" => {
-                            config.projects_dir = PathBuf::from(value);
+                        CONFIGFILE_PROJECTS_ROOT => {
+                            config.projects_root = PathBuf::from(value);
                         }
-                        "deploys_dir" => {
-                            config.deploys_dir = value.to_owned();
+                        CONFIGFILE_IGNORE_DIR => {
+                            config.ignore_dir = value.to_owned();
                         }
-                        "include" => {
+                        CONFIGFILE_INCLUDE => {
                             config.include.push(value.to_owned());
+                        }
+                        CONFIGFILE_EXTRA_PROJECTS_ROOT => {
+                            config.extra_roots.push(PathBuf::from(value));
                         }
                         _ => {}
                     }
@@ -97,15 +106,13 @@ fn run() -> Result<()> {
 
     if args.len() == 1 {
         let config = Config::new()?;
-        let proj_dir = config.projects_dir;
+        let proj_dir = &config.projects_root;
 
         if !proj_dir.try_exists()? {
-            // early return  as `PROJECTS_DIR` is just created and
-            // will contain nothing
             return create_projects_dir::start(proj_dir);
         }
 
-        let mut projects = Projects::new(proj_dir, config.include, true)?;
+        let mut projects = Projects::new(config, true)?;
         catch_empty_project_list(&projects.filtered_items)?;
         render_loop(&mut projects)?;
     } else {

@@ -19,7 +19,7 @@ impl CreateLayout<'_> {
         }
     }
     fn create_lang_dirs(&self, config: Config) -> Result<()> {
-        let path = config.projects_dir;
+        let path = config.projects_root;
         let recurse = !path.exists();
         if recurse {
             println!("Creating directory '{}'", path.to_string_lossy());

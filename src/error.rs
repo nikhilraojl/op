@@ -15,8 +15,8 @@ pub enum Error {
 impl std::fmt::Display for Error {
     fn fmt(&self, fmt: &mut std::fmt::Formatter) -> std::result::Result<(), std::fmt::Error> {
         match self {
-            Self::Io(_err) => write!(fmt, "{self:?}"),
-            Self::StdVar(_err) => write!(fmt, "{self:?}"),
+            Self::Io(err) => write!(fmt, "{err}"),
+            Self::StdVar(err) => write!(fmt, "{err}"),
             Self::NoArgProvided => write!(fmt, "No argument provided"),
             Self::InvalidArgs => write!(
                 fmt,
