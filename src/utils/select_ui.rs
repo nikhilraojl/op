@@ -43,7 +43,7 @@ pub fn render_loop(projects: &mut Projects) -> Result<()> {
 
 pub fn select_project(projects: &mut Projects) -> Result<()> {
     catch_empty_project_list(&projects.filtered_items)?;
-    let project = projects.filtered_items.get(projects.selected);
+    let project = projects.filtered_items.get(projects.selected_idx);
     if let Some(project) = project {
         let name = project
             .file_name()

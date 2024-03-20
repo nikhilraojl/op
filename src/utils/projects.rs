@@ -9,12 +9,13 @@ use crate::{Config, Result};
 
 #[derive(Debug)]
 pub struct Projects {
-    // pub project_path: PathBuf,
-    pub selected: usize,
+    pub selected_idx: usize,
     pub dir_items: Vec<PathBuf>,
     pub filtered_items: Vec<PathBuf>,
     // to be used when running cli command without any args
     no_arg: bool,
+    // for buffered stdout
+    buffer_rows: usize,
 }
 
 impl Projects {
@@ -28,6 +29,7 @@ impl Projects {
         }
         Ok(projs_vec)
     }
+
     pub fn new(config: Config, no_arg: bool) -> Result<Self> {
         let project_root = config.projects_root;
         let ignore_path = project_root.join(config.ignore_dir);
@@ -51,27 +53,30 @@ impl Projects {
                 .expect("Failed to sort `Projects` vec")
         });
         let projects = Self {
-            // project_path,
-            selected: 0,
+            selected_idx: 0,
             filtered_items: dir_items.clone(),
             dir_items,
             no_arg,
+            buffer_rows: 10,
         };
         Ok(projects)
     }
+
     fn select_initial(&mut self) {
-        self.selected = 0;
+        self.selected_idx = 0;
     }
     pub fn select_next(&mut self) {
-        if self.selected < (self.filtered_items.len() - 1) {
-            self.selected += 1;
+        if self.selected_idx < (self.filtered_items.len() - 1) {
+            self.selected_idx += 1;
         }
     }
+
     pub fn select_previous(&mut self) {
-        if self.selected > 0 {
-            self.selected -= 1;
+        if self.selected_idx > 0 {
+            self.selected_idx -= 1;
         }
     }
+
     pub fn filter_project_list(&mut self, filter_string: &String) -> Vec<PathBuf> {
         self.select_initial();
         self.dir_items
@@ -87,19 +92,28 @@ impl Projects {
             })
             .collect()
     }
+
     pub fn filter_print(&mut self, filter_string: Option<&String>, term: &Term) -> Result<()> {
+        let lines_to_clear = match self.buffer_rows < self.filtered_items.len() {
+            true => self.buffer_rows + 1,
+            false => self.filtered_items.len(),
+        };
         term.clear_to_end_of_screen()?;
-        term.clear_last_lines(self.filtered_items.len())?;
+        term.clear_last_lines(lines_to_clear)?;
+
         if let Some(filter_string) = filter_string {
-            term.clear_last_lines(1)?;
+            term.clear_last_lines(1)?; // this is to clear the previous `Find: <>`
             println!("Find: {filter_string}");
             self.filtered_items = self.filter_project_list(filter_string);
         }
+
         if !self.filtered_items.is_empty() {
+            // Display implementation kicks in here
             println!("{}", self);
         }
         Ok(())
     }
+
     pub fn matching_project(&self, project_name: &str) -> Option<&PathBuf> {
         for proj in &self.filtered_items {
             let matching_project = proj.ends_with(project_name);
@@ -144,9 +158,30 @@ impl Projects {
 impl Display for Projects {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         let mut output = String::new();
-        for (idx, item) in self.filtered_items.iter().enumerate() {
+
+        let (from, upto) = match self.buffer_rows > self.filtered_items.len() {
+            true => (0, self.filtered_items.len()),
+            false => {
+                let overflow_at_start =
+                    self.filtered_items.len() - self.selected_idx < self.buffer_rows;
+                let overflow_at_end =
+                    self.selected_idx + self.buffer_rows < self.filtered_items.len();
+
+                let from = match overflow_at_start {
+                    true => self.filtered_items.len() - self.buffer_rows,
+                    false => self.selected_idx,
+                };
+                let upto = match overflow_at_end {
+                    true => self.selected_idx + self.buffer_rows,
+                    false => self.filtered_items.len(),
+                };
+                (from, upto)
+            }
+        };
+
+        for (idx, item) in self.filtered_items[from..upto].iter().enumerate() {
             if self.no_arg {
-                if self.selected == idx {
+                if idx == self.selected_idx - from {
                     output.push_str(">> ");
                 } else {
                     output.push_str("   ");
