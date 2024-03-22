@@ -141,7 +141,7 @@ fn show_output(proj: Option<GitProject>) {
             proj_status.push("DIRTY");
         }
         if !proj_status.is_empty() {
-            println!("{:-<25}>{:?}", file_name, proj_status);
+            println!("{:<25}: {:?}", file_name, proj_status);
         }
     }
 }
