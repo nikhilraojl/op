@@ -1,5 +1,5 @@
 use crate::error::Result;
-use crate::utils::{get_projects_2, ActionTrait, HelpTrait};
+use crate::utils::{get_projects, ActionTrait, HelpTrait};
 use crate::Config;
 
 #[derive(Debug, PartialEq)]
@@ -20,10 +20,14 @@ impl ActionTrait for OpAction {
         if self.help {
             self.print_help();
         } else if self.print_path {
-            let projects = get_projects_2(config)?;
-            projects.print_work_dir(&self.proj_name);
+            let projects = get_projects(config)?;
+            if let Some(proj) = projects.matching_project(&self.proj_name) {
+                println!("{}", proj.display());
+            } else {
+                println!("No matching projects found. Couldn't switch to project dir'");
+            }
         } else {
-            let projects = get_projects_2(config)?;
+            let projects = get_projects(config)?;
             projects.open_project_in_nvim(&self.proj_name)?;
         }
         Ok(())

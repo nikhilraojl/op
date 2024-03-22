@@ -96,9 +96,14 @@ _NOTE: Git uninitiated and git directories with clean worktrees are ignored in t
 _NOTE: Only the locally checked out branch status is considered_\
 
 ```
-project_dir_1--------------->["DIRTY"] // some local uncommitted changes are present
-project_dir_2--------------->["NOT IN SYNC"] // HEAD & remote are not at the same commit
-project_dir_3--------------->["DIRTY", "NOT IN SYNC"] // both of above
+// some local uncommitted changes are present
+project_dir_1               : ["DIRTY"] 
+
+// HEAD & remote are not at the same commit
+project_dir_2               : ["NOT IN SYNC"] 
+
+// both of the above
+project_dir_3               : ["DIRTY", "NOT IN SYNC"] 
 ```
 
 

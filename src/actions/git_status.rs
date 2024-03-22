@@ -1,5 +1,5 @@
 use crate::error::{Error, Result};
-use crate::utils::{get_projects_2, ActionTrait, HelpTrait};
+use crate::utils::{get_projects, ActionTrait, HelpTrait};
 use crate::Config;
 use std::sync::{Arc, Mutex};
 use std::thread;
@@ -22,7 +22,7 @@ impl ActionTrait for GitStatusAction {
         if self.help {
             self.print_help();
         } else {
-            let projects = get_projects_2(config)?;
+            let projects = get_projects(config)?;
             let all_git_projs = gitstatus_on_multiple_threads(projects.dir_items)?;
             for proj in all_git_projs {
                 show_output(proj);
@@ -141,7 +141,7 @@ fn show_output(proj: Option<GitProject>) {
             proj_status.push("DIRTY");
         }
         if !proj_status.is_empty() {
-            println!("{:-<25}>{:?}", file_name, proj_status);
+            println!("{:<25}: {:?}", file_name, proj_status);
         }
     }
 }
