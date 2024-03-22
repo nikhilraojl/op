@@ -21,7 +21,11 @@ impl ActionTrait for OpAction {
             self.print_help();
         } else if self.print_path {
             let projects = get_projects(config)?;
-            projects.print_work_dir(&self.proj_name);
+            if let Some(proj) = projects.matching_project(&self.proj_name) {
+                println!("{}", proj.display());
+            } else {
+                println!("No matching projects found. Couldn't switch to project dir'");
+            }
         } else {
             let projects = get_projects(config)?;
             projects.open_project_in_nvim(&self.proj_name)?;

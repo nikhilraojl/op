@@ -12,8 +12,8 @@ pub struct Projects {
     pub selected_idx: usize,
     pub dir_items: Vec<PathBuf>,
     pub filtered_items: Vec<PathBuf>,
-    // to be used when running cli command without any args
-    no_arg: bool,
+    // to be used for selecting ui i.e running command without any args
+    cli_no_arg: bool,
     // for buffered stdout
     buffer_rows: usize,
 }
@@ -30,20 +30,20 @@ impl Projects {
         Ok(projs_vec)
     }
 
-    pub fn new(config: Config, no_arg: bool) -> Result<Self> {
+    pub fn new(config: Config, cli_no_arg: bool) -> Result<Self> {
         let project_root = config.projects_root;
         let ignore_path = project_root.join(config.ignore_dir);
 
         let mut include_paths = validate_paths(config.include);
-        // from `project_root`
+        // from configuration `project_root`
         let mut dir_items = Self::get_list(&project_root, &ignore_path)?;
 
-        // from the configured `extra_project_root`s
+        // from the configuration `extra_project_root`s
         for extra_project_root in config.extra_roots {
             dir_items.extend(Self::get_list(&extra_project_root, &ignore_path)?);
         }
 
-        // from the configured `include`s
+        // from the configuration `include`s
         dir_items.append(&mut include_paths);
 
         dir_items.sort_by(|a, b| {
@@ -56,10 +56,43 @@ impl Projects {
             selected_idx: 0,
             filtered_items: dir_items.clone(),
             dir_items,
-            no_arg,
+            cli_no_arg,
             buffer_rows: 10,
         };
         Ok(projects)
+    }
+
+    pub fn catch_empty_project_list(self) -> Result<Self> {
+        if self.filtered_items.is_empty() {
+            Err(Error::NoProjectsFound)
+        } else {
+            Ok(self)
+        }
+    }
+
+    pub fn filter_project_list(&mut self, filter_string: &String) -> Vec<PathBuf> {
+        self.dir_items
+            .clone()
+            .into_iter()
+            .filter(|item| {
+                let mut result = false;
+                if let Some(os_name) = item.file_name() {
+                    let x = os_name.to_str().expect("Failed to convert OsStr to str");
+                    result = x.starts_with(filter_string)
+                }
+                result
+            })
+            .collect()
+    }
+
+    pub fn matching_project(&self, project_name: &str) -> Option<&PathBuf> {
+        for proj in &self.filtered_items {
+            let matching_project = proj.ends_with(project_name);
+            if matching_project {
+                return Some(proj);
+            }
+        }
+        None
     }
 
     fn select_initial(&mut self) {
@@ -77,86 +110,10 @@ impl Projects {
         }
     }
 
-    pub fn filter_project_list(&mut self, filter_string: &String) -> Vec<PathBuf> {
-        self.select_initial();
-        self.dir_items
-            .clone()
-            .into_iter()
-            .filter(|item| {
-                let mut result = false;
-                if let Some(os_name) = item.file_name() {
-                    let x = os_name.to_str().expect("Failed to convert OsStr to str");
-                    result = x.starts_with(filter_string)
-                }
-                result
-            })
-            .collect()
-    }
-
-    pub fn filter_print(&mut self, filter_string: Option<&String>, term: &Term) -> Result<()> {
-        let lines_to_clear = match self.buffer_rows < self.filtered_items.len() {
-            true => self.buffer_rows + 1,
-            false => self.filtered_items.len(),
-        };
-        term.clear_to_end_of_screen()?;
-        term.clear_last_lines(lines_to_clear)?;
-
-        if let Some(filter_string) = filter_string {
-            term.clear_last_lines(1)?; // this is to clear the previous `Find: <>`
-            println!("Find: {filter_string}");
-            self.filtered_items = self.filter_project_list(filter_string);
-        }
-
-        if !self.filtered_items.is_empty() {
-            // Display implementation kicks in here
-            println!("{}", self.select_ui_fmt());
-        }
-        Ok(())
-    }
-
-    pub fn matching_project(&self, project_name: &str) -> Option<&PathBuf> {
-        for proj in &self.filtered_items {
-            let matching_project = proj.ends_with(project_name);
-            if matching_project {
-                return Some(proj);
-            }
-        }
-        None
-    }
-
-    pub fn open_project_in_nvim(&self, project_name: &str) -> Result<()> {
-        if let Some(proj) = self.matching_project(project_name) {
-            println!("Opening project {:?}", project_name);
-
-            std::env::set_current_dir(proj)?;
-
-            let mut nvim_process = Command::new("nvim");
-            nvim_process.arg(".");
-            nvim_process.status()?;
-            println!("Closing project {:?}", project_name);
-            std::process::exit(0);
-        }
-
-        if self.filtered_items.is_empty() {
-            return Err(Error::NoProjectsFound);
-        }
-
-        println!("No matching projects found. Only below projects are available");
-        println!("{}", self.display_fmt(0, self.filtered_items.len()));
-        Ok(())
-    }
-
-    pub fn print_work_dir(&self, project_name: &str) {
-        if let Some(proj) = self.matching_project(project_name) {
-            println!("{}", proj.display());
-        } else {
-            println!("No matching projects found. Couldn't switch to project dir'");
-        }
-    }
     pub fn display_fmt(&self, from: usize, upto: usize) -> String {
         let mut output = String::new();
         for (idx, item) in self.filtered_items[from..upto].iter().enumerate() {
-            if self.no_arg {
+            if self.cli_no_arg {
                 if idx == self.selected_idx - from {
                     output.push_str(">> ");
                 } else {
@@ -195,5 +152,49 @@ impl Projects {
             }
         };
         self.display_fmt(from, upto)
+    }
+
+    pub fn filter_print(&mut self, filter_string: Option<&String>, term: &Term) -> Result<()> {
+        let lines_to_clear = match self.buffer_rows < self.filtered_items.len() {
+            true => self.buffer_rows + 1,
+            false => self.filtered_items.len(),
+        };
+        term.clear_to_end_of_screen()?;
+        term.clear_last_lines(lines_to_clear)?;
+
+        if let Some(filter_string) = filter_string {
+            term.clear_last_lines(1)?; // this is to clear the previous `Find: <>`
+            println!("Find: {filter_string}");
+            self.select_initial();
+            self.filtered_items = self.filter_project_list(filter_string);
+        }
+
+        if !self.filtered_items.is_empty() {
+            // Display implementation kicks in here
+            println!("{}", self.select_ui_fmt());
+        }
+        Ok(())
+    }
+
+    pub fn open_project_in_nvim(&self, project_name: &str) -> Result<()> {
+        if let Some(proj) = self.matching_project(project_name) {
+            println!("Opening project {:?}", project_name);
+
+            std::env::set_current_dir(proj)?;
+
+            let mut nvim_process = Command::new("nvim");
+            nvim_process.arg(".");
+            nvim_process.status()?;
+            println!("Closing project {:?}", project_name);
+            std::process::exit(0);
+        }
+
+        if self.filtered_items.is_empty() {
+            return Err(Error::NoProjectsFound);
+        }
+
+        println!("No matching projects found. Only below projects are available");
+        println!("{}", self.display_fmt(0, self.filtered_items.len()));
+        Ok(())
     }
 }

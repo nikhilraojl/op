@@ -19,9 +19,8 @@ use utils::constants::{
 };
 use utils::constants::{DEFAULT_IGNORE_DIR, DEFAULT_PROJECTS_ROOT, OP_CONFIG};
 use utils::create_projects_dir;
-use utils::projects::Projects;
 use utils::select_ui::render_loop;
-use utils::{catch_empty_project_list, check_help_flag, check_valid_flag, get_profile_path};
+use utils::{check_help_flag, check_valid_flag, get_profile_path};
 use utils::{ActionTrait, ShortFlag};
 
 fn main() {
@@ -111,10 +110,7 @@ fn run() -> Result<()> {
         if !proj_dir.try_exists()? {
             return create_projects_dir::start(proj_dir);
         }
-
-        let mut projects = Projects::new(config, true)?;
-        catch_empty_project_list(&projects.filtered_items)?;
-        render_loop(&mut projects)?;
+        render_loop(config)?;
     } else {
         // first arg is generally the program path and hence skipped here
         args.next();
@@ -141,6 +137,7 @@ fn process_arg_command<T: Iterator<Item = String>>(args: &mut T) -> Result<ArgAc
         }
         return Ok(ArgAction::ListAllProjects(list_args));
     }
+
     if check_valid_flag(&arg, "create", ShortFlag::Infer)? {
         let mut create_args = CreateLayout::new();
         if let Some(iarg) = &args.next() {
@@ -148,6 +145,7 @@ fn process_arg_command<T: Iterator<Item = String>>(args: &mut T) -> Result<ArgAc
         }
         return Ok(ArgAction::CreateLayout(create_args));
     }
+
     if check_valid_flag(&arg, "add", ShortFlag::Infer)? {
         let mut include_args = IncludeAction {
             path: String::new(),

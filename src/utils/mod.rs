@@ -60,14 +60,6 @@ pub fn check_help_flag<T: Iterator<Item = String>>(arg: &String, args: &mut T) -
     Err(Error::InvalidArgs)
 }
 
-pub fn catch_empty_project_list(all_projs: &[PathBuf]) -> Result<()> {
-    if all_projs.is_empty() {
-        Err(Error::NoProjectsFound)
-    } else {
-        Ok(())
-    }
-}
-
 pub fn get_profile_path() -> Result<String> {
     match OS {
         "windows" => Ok(std::env::var("userprofile")?),
