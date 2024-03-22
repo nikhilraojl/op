@@ -19,7 +19,7 @@ impl ActionTrait for ListAction {
         } else {
             let projects = get_projects(config)?;
             catch_empty_project_list(&projects.filtered_items)?;
-            println!("{}", projects);
+            println!("{}", projects.display_fmt(0, projects.filtered_items.len()));
         }
         Ok(())
     }

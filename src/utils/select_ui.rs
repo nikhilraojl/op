@@ -8,7 +8,7 @@ pub fn render_loop(projects: &mut Projects) -> Result<()> {
     let mut filter_string = String::new();
     let term = Term::stdout();
     term.hide_cursor()?;
-    println!("{projects}");
+    println!("{}", projects.select_ui_fmt());
     'main: loop {
         let read_key = term.read_key().expect("Failed to read key");
         if read_key == Key::ArrowUp {

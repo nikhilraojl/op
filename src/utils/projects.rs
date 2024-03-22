@@ -1,6 +1,6 @@
 use console::Term;
 use std::path::PathBuf;
-use std::{fmt::Display, process::Command};
+use std::process::Command;
 use walkdir::WalkDir;
 
 use super::validate_paths;
@@ -109,7 +109,7 @@ impl Projects {
 
         if !self.filtered_items.is_empty() {
             // Display implementation kicks in here
-            println!("{}", self);
+            println!("{}", self.select_ui_fmt());
         }
         Ok(())
     }
@@ -142,7 +142,7 @@ impl Projects {
         }
 
         println!("No matching projects found. Only below projects are available");
-        println!("{self}");
+        println!("{}", self.display_fmt(0, self.filtered_items.len()));
         Ok(())
     }
 
@@ -153,12 +153,28 @@ impl Projects {
             println!("No matching projects found. Couldn't switch to project dir'");
         }
     }
-}
-
-impl Display for Projects {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+    pub fn display_fmt(&self, from: usize, upto: usize) -> String {
         let mut output = String::new();
+        for (idx, item) in self.filtered_items[from..upto].iter().enumerate() {
+            if self.no_arg {
+                if idx == self.selected_idx - from {
+                    output.push_str(">> ");
+                } else {
+                    output.push_str("   ");
+                }
+            }
+            if let Some(dir_name) = item.file_name() {
+                let name = dir_name.to_str().expect("Failed to convert OsStr to str");
+                output.push_str(name);
+                if idx < (self.filtered_items.len() - 1) {
+                    output.push('\n');
+                }
+            }
+        }
+        output
+    }
 
+    pub fn select_ui_fmt(&self) -> String {
         let (from, upto) = match self.buffer_rows > self.filtered_items.len() {
             true => (0, self.filtered_items.len()),
             false => {
@@ -178,23 +194,6 @@ impl Display for Projects {
                 (from, upto)
             }
         };
-
-        for (idx, item) in self.filtered_items[from..upto].iter().enumerate() {
-            if self.no_arg {
-                if idx == self.selected_idx - from {
-                    output.push_str(">> ");
-                } else {
-                    output.push_str("   ");
-                }
-            }
-            if let Some(dir_name) = item.file_name() {
-                let name = dir_name.to_str().expect("Failed to convert OsStr to str");
-                output.push_str(name);
-                if idx < (self.filtered_items.len() - 1) {
-                    output.push('\n');
-                }
-            }
-        }
-        write!(f, "{output}")
+        self.display_fmt(from, upto)
     }
 }
