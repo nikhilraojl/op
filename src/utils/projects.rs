@@ -32,14 +32,15 @@ impl Projects {
 
     pub fn new(config: Config, cli_no_arg: bool) -> Result<Self> {
         let project_root = config.projects_root;
-        let ignore_path = project_root.join(config.ignore_dir);
 
         let mut include_paths = validate_paths(config.include);
         // from configuration `project_root`
+        let ignore_path = project_root.join(&config.ignore_dir);
         let mut dir_items = Self::get_list(&project_root, &ignore_path)?;
 
         // from the configuration `extra_project_root`s
         for extra_project_root in config.extra_roots {
+            let ignore_path = extra_project_root.join(&config.ignore_dir);
             dir_items.extend(Self::get_list(&extra_project_root, &ignore_path)?);
         }
 
