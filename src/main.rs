@@ -180,6 +180,7 @@ fn process_arg_command<T: Iterator<Item = String>>(args: &mut T) -> Result<ArgAc
     let mut op_args = OpAction {
         proj_name: arg,
         print_path: false,
+        print_uri: false,
         help: false,
     };
 
@@ -189,8 +190,12 @@ fn process_arg_command<T: Iterator<Item = String>>(args: &mut T) -> Result<ArgAc
         if check_valid_flag(iarg, "print", ShortFlag::Infer)? {
             op_args.print_path = true;
             next_arg = args.next();
+        } else if check_valid_flag(iarg, "uri", ShortFlag::Infer)? {
+            op_args.print_uri = true;
+            next_arg = args.next();
         }
-    }
+
+    } 
 
     if let Some(iarg) = next_arg {
         op_args.help = check_help_flag(&iarg, args)?;

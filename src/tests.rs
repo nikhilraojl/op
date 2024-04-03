@@ -70,6 +70,7 @@ mod argaction_tests {
         let op_args = OpAction {
             proj_name: "project".to_owned(),
             print_path: false,
+            print_uri: false,
             help: false,
         };
         let _exp = ArgAction::OpenProject(op_args);
@@ -81,6 +82,7 @@ mod argaction_tests {
         let op_args = OpAction {
             proj_name: "project".to_owned(),
             print_path: false,
+            print_uri: false,
             help: true,
         };
         let exp = ArgAction::OpenProject(op_args);
@@ -94,13 +96,26 @@ mod argaction_tests {
     }
 
     #[test]
-    fn test_process_open_action_print() {
+    fn test_process_open_action_flags() {
         // project --print
         let mut args = ["project".to_owned(), "--print".to_owned()].into_iter();
         let act = process_arg_command(&mut args).unwrap();
         let op_args = OpAction {
             proj_name: "project".to_owned(),
             print_path: true,
+            print_uri: false,
+            help: false,
+        };
+        let exp = ArgAction::OpenProject(op_args);
+        assert_eq!(act, exp);
+        
+        // project --uri
+        let mut args = ["project".to_owned(), "--uri".to_owned()].into_iter();
+        let act = process_arg_command(&mut args).unwrap();
+        let op_args = OpAction {
+            proj_name: "project".to_owned(),
+            print_path: false,
+            print_uri: true,
             help: false,
         };
         let exp = ArgAction::OpenProject(op_args);
@@ -117,6 +132,7 @@ mod argaction_tests {
         let op_args = OpAction {
             proj_name: "project".to_owned(),
             print_path: true,
+            print_uri: false,
             help: true,
         };
         let exp = ArgAction::OpenProject(op_args);
@@ -126,6 +142,28 @@ mod argaction_tests {
         let mut args = [
             "project".to_owned(),
             "--help".to_owned(),
+            "--print".to_owned(),
+        ]
+        .into_iter();
+        if process_arg_command(&mut args).is_ok() {
+            panic!()
+        }
+        
+        // project --print --uri
+        let mut args = [
+            "project".to_owned(),
+            "--print".to_owned(),
+            "--uri".to_owned(),
+        ]
+        .into_iter();
+        if process_arg_command(&mut args).is_ok() {
+            panic!()
+        }
+        
+        // project --uri --print
+        let mut args = [
+            "project".to_owned(),
+            "--uri".to_owned(),
             "--print".to_owned(),
         ]
         .into_iter();
