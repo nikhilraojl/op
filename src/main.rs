@@ -194,8 +194,7 @@ fn process_arg_command<T: Iterator<Item = String>>(args: &mut T) -> Result<ArgAc
             op_args.print_uri = true;
             next_arg = args.next();
         }
-
-    } 
+    }
 
     if let Some(iarg) = next_arg {
         op_args.help = check_help_flag(&iarg, args)?;

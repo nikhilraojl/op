@@ -6,7 +6,7 @@ A simple program written in rust to quickly open projects in neovim. Works on bo
 
 #### Basic
 
-Just run `op` command and a list UI shows up, navigate using arrow keys and select a project with `enter` to open it with neovim.
+Just run `op` command and an UI shows up, navigate using arrow keys and select a project with `enter` to open it with neovim.
 Use `escape` to exit the UI\
 ![](./media/op_nvim.png)
 
@@ -37,7 +37,7 @@ $HOME
             |- py_ds_kata
 ```
 
-You can configure multiple `Projects` roots and also include additional directories outside of the layout with `.opconfig`. Example config below
+You can configure multiple `Projects` roots and also include additional directories outside of the layout with `.opconfig` in your home folder. Example config below
 
 ```ini
 # specifying the base `Projects` location (lines starting with `#` are ignored)
@@ -59,14 +59,34 @@ include=/path/to/project_dir_2
 
 #### Main options
 
+Use
+
 `op [--help|-h]`: to show available commands & options
 
 `op [project_name]`: to directly open the 'project_dir' in nvim.
 This becomes more powerfull when combined with tab completion.
 See below for setting up autocomplete for powershell & bash
 
+`op [project_name] [--print|-p]`: to print full path of the 'project_dir' flag. The output can be piped in a shell. Example
+
+```
+op test_proj -p | cd    in powershell
+or
+cd `op tmp -p`          in bash
+```
+
+`op [project_name] [--uri|-u]`: to print git remote url of the project. Useful for if your terminal supports clickable links. This options is not smart, it just performs a simple string substitution. May fail in some cases
+
+```
+op op --uri | cd
+
+# output
+https://github.com/nikhilraojl/op_nvim
+```
+
 `op [--create|-c]`: to create the above mentioned layout.
-This creates five directories with names python, javascript, rust, go, plain_txt for organizing in your `Projects` directory\
+This creates five directories with names python, javascript, rust, go, plain_txt for organizing in your `Projects` directory
+
 _NOTE: No additional directories inside the language directories will be created, BYOProject_
 
 ```
@@ -81,31 +101,22 @@ home
 
 `op [--list|-l]`: to list all the project_dirs
 
-`op [--print|-p]`: to print full path of the 'project_dir' flag. The output can be piped in a shell. Example
-
-```
-op test_proj -p | cd    in powershell
-or
-cd `op tmp -p`          in bash
-```
-
 `op [--add|-a] <path>`: adds a new line `include=<path>` to `.opconfig`. Useful for quickly adding project_dirs from cli instead of doing it manually
 
-`op [--git-status|-g]`: prints out git status of all the 'project_dir's detected. Example output below\
-_NOTE: Git uninitiated and git directories with clean worktrees are ignored in the output._\
-_NOTE: Only the locally checked out branch status is considered_\
+`op [--git-status|-g]`: prints out git status of all the 'project_dir's detected. Example output below
+
+_NOTE: Git uninitiated and git directories with clean worktrees are ignored in the output. Only the locally checked out branch status is considered_
 
 ```
-// some local uncommitted changes are present
-project_dir_1               : ["DIRTY"] 
+# some local uncommitted changes are present
+project_dir_1               : ["DIRTY"]
 
-// HEAD & remote are not at the same commit
-project_dir_2               : ["NOT IN SYNC"] 
+# HEAD & remote are not at the same commit
+project_dir_2               : ["NOT IN SYNC"]
 
-// both of the above
-project_dir_3               : ["DIRTY", "NOT IN SYNC"] 
+# both of the above
+project_dir_3               : ["DIRTY", "NOT IN SYNC"]
 ```
-
 
 ## Autocomplete for shells
 

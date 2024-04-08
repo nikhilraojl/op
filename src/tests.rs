@@ -108,7 +108,7 @@ mod argaction_tests {
         };
         let exp = ArgAction::OpenProject(op_args);
         assert_eq!(act, exp);
-        
+
         // project --uri
         let mut args = ["project".to_owned(), "--uri".to_owned()].into_iter();
         let act = process_arg_command(&mut args).unwrap();
@@ -148,7 +148,7 @@ mod argaction_tests {
         if process_arg_command(&mut args).is_ok() {
             panic!()
         }
-        
+
         // project --print --uri
         let mut args = [
             "project".to_owned(),
@@ -159,7 +159,7 @@ mod argaction_tests {
         if process_arg_command(&mut args).is_ok() {
             panic!()
         }
-        
+
         // project --uri --print
         let mut args = [
             "project".to_owned(),
