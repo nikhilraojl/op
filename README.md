@@ -1,16 +1,17 @@
 ## About
 
-A simple program written in rust to quickly open projects in neovim. Works on both windows and linux.
+A simple program to quickly open projects in neovim. Works on both windows and linux. Written in rust btw.
 
 ## Usage
 
 #### Basic
 
-Just run `op` command and an UI shows up, navigate using arrow keys and select a project with `enter` to open it with neovim.
-Use `escape` to exit the UI\
+The simplest way to use this program is to run `op <project_dir>` which opens said project in neovim.
+
+You can also just run `op` command and an UI shows up. You can navigate using arrow keys, search by typing and select a project with `enter` to open it with neovim. Use `escape` to exit the UI\
 ![](./media/op_nvim.png)
 
-Below is the layout expected for this program to run by default. Only 'project_dir' level in the layout is detected by this program
+**IMPORTANT: Below is the layout expected for this program to run. By default only 'project_dir' level in the layout is detected by this program**
 
 ```
 # Reference layout
@@ -59,15 +60,11 @@ include=/path/to/project_dir_2
 
 #### Main options
 
-Use
+`op [--help|-h]`: shows all available commands & options
 
-`op [--help|-h]`: to show available commands & options
+`op [project_dir]`: directly opens the 'project_dir' in nvim. This becomes more powerfull when combined with tab completion. See below for setting up autocomplete for powershell & bash
 
-`op [project_name]`: to directly open the 'project_dir' in nvim.
-This becomes more powerfull when combined with tab completion.
-See below for setting up autocomplete for powershell & bash
-
-`op [project_name] [--print|-p]`: to print full path of the 'project_dir' flag. The output can be piped in a shell. Example
+`op [project_name] [--print|-p]`: prints full path of the 'project_dir'. The output can be piped in a shell. For example to quickly `cd` to a 'project_dir' you can do something like
 
 ```
 op test_proj -p | cd    in powershell
@@ -75,19 +72,16 @@ or
 cd `op tmp -p`          in bash
 ```
 
-`op [project_name] [--uri|-u]`: to print git remote url of the project. Useful for if your terminal supports clickable links. This options is not smart, it just performs a simple string substitution. May fail in some cases
+`op [project_name] [--uri|-u]`: prints git remote url of the project. Useful if your terminal supports clickable links. This option is not smart, it just performs a simple string substitution. May fail in some cases
 
 ```
-op op --uri | cd
+op op --uri
 
 # output
 https://github.com/nikhilraojl/op_nvim
 ```
 
-`op [--create|-c]`: to create the above mentioned layout.
-This creates five directories with names python, javascript, rust, go, plain_txt for organizing in your `Projects` directory
-
-_NOTE: No additional directories inside the language directories will be created, BYOProject_
+`op [--create|-c]`: creates a directory layout as mentioned in the beginning. This command creates five directories with names python, javascript, rust, go, plain_txt in a `Projects` directory
 
 ```
 home
@@ -99,13 +93,11 @@ home
         |-plain_txt
 ```
 
-`op [--list|-l]`: to list all the project_dirs
+`op [--list|-l]`: lists all the 'project_dir's
 
-`op [--add|-a] <path>`: adds a new line `include=<path>` to `.opconfig`. Useful for quickly adding project_dirs from cli instead of doing it manually
+`op [--add|-a] <path>`: useful for quickly adding project_dirs from cli instead of doing it manually. Adds a new line `include=<path>` to `.opconfig`
 
 `op [--git-status|-g]`: prints out git status of all the 'project_dir's detected. Example output below
-
-_NOTE: Git uninitiated and git directories with clean worktrees are ignored in the output. Only the locally checked out branch status is considered_
 
 ```
 # some local uncommitted changes are present
@@ -117,6 +109,8 @@ project_dir_2               : ["NOT IN SYNC"]
 # both of the above
 project_dir_3               : ["DIRTY", "NOT IN SYNC"]
 ```
+
+_NOTE: Git uninitiated and git directories with clean worktrees are ignored in the output. Only the locally checked out branch status is considered_
 
 ## Autocomplete for shells
 
