@@ -187,42 +187,39 @@ impl Worker {
         }
     }
 }
-struct Executor {
-    workers: Vec<Worker>,
-}
+struct Executor;
 
 impl Executor {
     fn run(num_threads: usize, data: Vec<PathBuf>) -> AcMx<Vec<Option<GitProject>>> {
-        let mut workers = Vec::with_capacity(num_threads);
+        let mut workers = Vec::<Worker>::with_capacity(num_threads);
         let input_data = Arc::new(Mutex::new(data));
 
         let git_data: Vec<Option<GitProject>> = Vec::new();
-        let atomic_git_data = Arc::new(Mutex::new(git_data));
+        let atomic_git_output = Arc::new(Mutex::new(git_data));
 
         // spawn threads which will work until values in `input_data` are exhausted
         for id in 0..num_threads {
-            workers.push(Worker::job(id, input_data.clone(), atomic_git_data.clone()));
+            workers.push(Worker::job(
+                id,
+                input_data.clone(),
+                atomic_git_output.clone(),
+            ));
         }
 
-        Executor { workers };
-        atomic_git_data
-    }
-}
-impl Drop for Executor {
-    fn drop(&mut self) {
-        for worker in &mut self.workers {
-            // We need to join all worker threads before proceeding further
+        for worker in &mut workers {
             if let Some(t) = worker.thread.take() {
                 t.join().expect("Unable to join thread to parent thread");
             }
         }
+
+        atomic_git_output
     }
 }
 
 fn gitstatus_on_multiple_threads(paths: Vec<PathBuf>) -> Result<Vec<Option<GitProject>>> {
     let num_threads = 6;
     let pool = Executor::run(num_threads, paths);
-    let lock = Arc::into_inner(pool).ok_or(Error::FetchStatus)?;
-    let data = lock.into_inner().map_err(|_| Error::FetchStatus)?;
-    Ok(data)
+    let lock = Arc::into_inner(pool).ok_or(Error::GitStatus)?;
+    let output_data = lock.into_inner().map_err(|_| Error::GitStatus)?;
+    Ok(output_data)
 }

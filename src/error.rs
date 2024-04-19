@@ -9,7 +9,7 @@ pub enum Error {
     NoProjectsFound,
     InvalidArgs,
     UnSupportedOS,
-    FetchStatus,
+    GitStatus,
 }
 
 impl std::fmt::Display for Error {
@@ -26,7 +26,7 @@ impl std::fmt::Display for Error {
                 write!(fmt, "No Project(s) found. Check README for more details")
             }
             Self::UnSupportedOS => write!(fmt, "Current OS is unsupported"),
-            Self::FetchStatus => write!(fmt, "Something went wrong while fetching git status"),
+            Self::GitStatus => write!(fmt, "Something went wrong while fetching git status"),
         }
     }
 }

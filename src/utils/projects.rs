@@ -18,6 +18,15 @@ pub struct Projects {
     buffer_rows: usize,
 }
 
+fn file_name_lowercase(file: &PathBuf) -> String {
+    let file_name = file
+        .file_name()
+        .unwrap_or_else(|| panic!("Failed to convert {:?} to OsStr", file))
+        .to_str()
+        .unwrap_or_else(|| panic!("Failed to convert {:?} to str", file));
+    file_name.to_lowercase()
+}
+
 impl Projects {
     fn get_list(project_path: &PathBuf, ignore_path: &PathBuf) -> std::io::Result<Vec<PathBuf>> {
         let mut projs_vec = Vec::<PathBuf>::new();
@@ -48,11 +57,11 @@ impl Projects {
         dir_items.append(&mut include_paths);
 
         dir_items.sort_by(|a, b| {
-            a.file_name()
-                .expect("Failed to get filename OsStr")
-                .partial_cmp(b.file_name().expect("Failed to get filename OsStr"))
-                .expect("Failed to sort `Projects` vec")
+            let file_a = file_name_lowercase(a);
+            let file_b = file_name_lowercase(b);
+            file_a.cmp(&file_b)
         });
+
         let projects = Self {
             selected_idx: 0,
             filtered_items: dir_items.clone(),
@@ -75,14 +84,7 @@ impl Projects {
         self.dir_items
             .clone()
             .into_iter()
-            .filter(|item| {
-                let mut result = false;
-                if let Some(os_name) = item.file_name() {
-                    let x = os_name.to_str().expect("Failed to convert OsStr to str");
-                    result = x.starts_with(filter_string)
-                }
-                result
-            })
+            .filter(|item| file_name_lowercase(item).starts_with(filter_string))
             .collect()
     }
 
@@ -171,7 +173,6 @@ impl Projects {
         }
 
         if !self.filtered_items.is_empty() {
-            // Display implementation kicks in here
             println!("{}", self.select_ui_fmt());
         }
         Ok(())
@@ -188,14 +189,10 @@ impl Projects {
             nvim_process.status()?;
             println!("Closing project {:?}", project_name);
             std::process::exit(0);
+        } else {
+            eprintln!("No matching projects found. Only below projects are available");
+            eprintln!("{}", self.display_fmt(0, self.filtered_items.len()));
         }
-
-        if self.filtered_items.is_empty() {
-            return Err(Error::NoProjectsFound);
-        }
-
-        println!("No matching projects found. Only below projects are available");
-        println!("{}", self.display_fmt(0, self.filtered_items.len()));
         Ok(())
     }
 }
