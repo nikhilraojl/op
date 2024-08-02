@@ -3,6 +3,7 @@ use std::path::PathBuf;
 use std::process::Command;
 use walkdir::WalkDir;
 
+use super::fuzzy::scored_fuzzy_search;
 use super::validate_paths;
 use crate::error::Error;
 use crate::{Config, Result};
@@ -80,12 +81,23 @@ impl Projects {
         }
     }
 
-    pub fn filter_project_list(&mut self, filter_string: &String) -> Vec<PathBuf> {
-        self.dir_items
-            .clone()
-            .into_iter()
-            .filter(|item| file_name_lowercase(item).starts_with(filter_string))
-            .collect()
+    pub fn filter_project_list(&mut self, filter_string: &str) -> Vec<(&PathBuf, (bool, i64))> {
+        let mut project_list = self
+            .dir_items
+            .iter()
+            .map(|item| {
+                let f_name = file_name_lowercase(item);
+                let fuz = scored_fuzzy_search(filter_string, &f_name);
+                (item, fuz)
+            })
+            .filter(|item| item.1 .0)
+            .collect::<Vec<_>>();
+        project_list.sort_by(|a, b| {
+            let a_fuz = b.1;
+            let b_fuz = a.1;
+            b_fuz.1.cmp(&a_fuz.1)
+        });
+        project_list
     }
 
     pub fn matching_project(&self, project_name: &str) -> Option<&PathBuf> {
@@ -169,7 +181,11 @@ impl Projects {
             term.clear_last_lines(1)?; // this is to clear the previous `Find: <>`
             println!("Find: {filter_string}");
             self.select_initial();
-            self.filtered_items = self.filter_project_list(filter_string);
+            self.filtered_items = self
+                .filter_project_list(filter_string)
+                .into_iter()
+                .map(|v| v.0.to_owned())
+                .collect();
         }
 
         if !self.filtered_items.is_empty() {

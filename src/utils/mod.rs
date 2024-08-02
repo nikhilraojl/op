@@ -2,6 +2,7 @@ pub mod constants;
 pub mod create_projects_dir;
 pub mod projects;
 pub mod select_ui;
+pub mod fuzzy;
 
 use projects::Projects;
 use std::{env::consts::OS, path::PathBuf};
