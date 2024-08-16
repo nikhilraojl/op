@@ -11,32 +11,54 @@ pub fn render_loop(config: Config) -> Result<()> {
     term.hide_cursor()?;
     println!("{}", projects.select_ui_fmt());
     'main: loop {
-        let read_key = term.read_key().expect("Failed to read key");
-        if read_key == Key::ArrowUp {
-            projects.select_previous();
-            projects.filter_print(None, &term)?;
-        }
-        if read_key == Key::ArrowDown {
-            projects.select_next();
-            projects.filter_print(None, &term)?;
-        }
-
-        if let Key::Char(ch) = read_key {
-            filter_string.push(ch);
-            projects.filter_print(Some(&filter_string), &term)?;
-        }
-        if read_key == Key::Backspace {
-            if !filter_string.is_empty() {
-                filter_string.pop();
+        let read_key_raw = term.read_key_raw().expect("Failed to read key");
+        match read_key_raw {
+            Key::ArrowUp => {
+                projects.select_previous();
+                projects.filter_print(None, &term)?;
             }
-            projects.filter_print(Some(&filter_string), &term)?;
-        }
-        if read_key == Key::Enter {
-            select_project(projects)?;
-            break 'main;
-        }
-        if read_key == Key::Escape {
-            break 'main;
+            Key::ArrowDown => {
+                projects.select_next();
+                projects.filter_print(None, &term)?;
+            }
+            Key::Char(ch) => match ch {
+                // clear content if ctrl+backspace is pressed
+                // NOTE: isn't tested for cmd or super keys
+                '\u{007f}' => {
+                    filter_string.clear();
+                    projects.filter_print(Some(&filter_string), &term)?;
+                }
+
+                // move vertically when J/K is received instead of filtering
+                'J' => {
+                    projects.select_next();
+                    projects.filter_print(None, &term)?;
+                }
+                'K' => {
+                    projects.select_previous();
+                    projects.filter_print(None, &term)?;
+                }
+
+                // do search and filter
+                _ => {
+                    filter_string.push(ch);
+                    projects.filter_print(Some(&filter_string), &term)?;
+                }
+            },
+            Key::Backspace => {
+                if !filter_string.is_empty() {
+                    filter_string.pop();
+                }
+                projects.filter_print(Some(&filter_string), &term)?;
+            }
+            Key::Enter => {
+                select_project(projects)?;
+                break 'main;
+            }
+            Key::Escape => {
+                break 'main;
+            }
+            _ => {}
         }
     }
     Ok(())

@@ -58,6 +58,28 @@ include=/path/to/project_dir
 include=/path/to/project_dir_2
 ```
 
+#### Select UI
+`op`: displays all projects as a list which can be navigated and fuzzy searched. Just type to start fuzzy search
+
+```shell
+Find:
+   axum_promodoro
+   bdays
+>> Blogs
+   clip_history
+   dist
+   django_web
+   dll_rust
+   explorations
+   f1gp
+```
+
+- `Arrow Up (or) J`: moves the selection up
+- `Arrow Down (or) K`: moves the selection down
+- `Esc`: exits the program
+- `Enter`: opens selected project in neovim
+- `Ctrl + Backspace`: clear current search
+
 #### Main options
 
 `op [--help|-h]`: shows all available commands & options
