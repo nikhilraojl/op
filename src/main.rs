@@ -7,6 +7,7 @@ use std::fs::read_to_string;
 use std::path::PathBuf;
 
 use actions::create_layout::CreateLayout;
+use actions::fuz_find::FuzFindAction;
 use actions::git_status::GitStatusAction;
 use actions::list_projects::ListAction;
 use actions::main_help::MainHelpAction;
@@ -84,6 +85,7 @@ enum ArgAction<'a> {
     OpenProject(OpAction),
     AddToOpConfig(IncludeAction),
     GetGitStatus(GitStatusAction),
+    FuzFind(FuzFindAction),
 }
 
 impl<'a> ArgAction<'a> {
@@ -96,6 +98,7 @@ impl<'a> ArgAction<'a> {
             Self::OpenProject(action) => action.execute(config),
             Self::AddToOpConfig(action) => action.execute(config),
             Self::GetGitStatus(action) => action.execute(config),
+            Self::FuzFind(action) => action.execute(config),
         }
     }
 }
@@ -153,14 +156,12 @@ fn process_arg_command<T: Iterator<Item = String>>(args: &mut T) -> Result<ArgAc
         };
         match args.next() {
             Some(iarg) => {
+                include_args.help = check_help_flag(&iarg, args)?;
                 let path = PathBuf::from(&iarg);
                 if path.exists() {
                     include_args.path = iarg;
-                    if let Some(iarg) = &args.next() {
-                        include_args.help = check_help_flag(iarg, args)?;
-                    }
                 } else {
-                    include_args.help = check_help_flag(&iarg, args)?;
+                    return Err(Error::NoProjectsFound);
                 }
             }
             None => return Err(Error::InvalidArgs),
@@ -174,6 +175,22 @@ fn process_arg_command<T: Iterator<Item = String>>(args: &mut T) -> Result<ArgAc
             git_status_args.help = check_help_flag(iarg, args)?;
         }
         return Ok(ArgAction::GetGitStatus(git_status_args));
+    }
+
+    if check_valid_flag(&arg, "fuz", ShortFlag::Infer)? {
+        let mut fuz_args = FuzFindAction {
+            filter_string: String::new(),
+            help: false,
+        };
+
+        if let Some(iarg) = &args.next() {
+            fuz_args.help = check_help_flag(iarg, args)?;
+            fuz_args.filter_string = iarg.to_owned();
+            if args.next().is_some() {
+                return Err(Error::InvalidArgs);
+            }
+        }
+        return Ok(ArgAction::FuzFind(fuz_args));
     }
 
     // we go the OpenProject if no other flags are matched

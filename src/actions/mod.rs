@@ -1,4 +1,5 @@
 pub mod create_layout;
+pub mod fuz_find;
 pub mod git_status;
 pub mod list_projects;
 pub mod main_help;

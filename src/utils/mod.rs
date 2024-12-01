@@ -56,9 +56,9 @@ pub fn check_help_flag<T: Iterator<Item = String>>(arg: &String, args: &mut T) -
             // there should be no args after --help flag
             return Err(Error::InvalidArgs);
         }
-        return Ok(help_flag);
     }
-    Err(Error::InvalidArgs)
+    return Ok(help_flag);
+    // Err(Error::InvalidArgs)
 }
 
 pub fn get_profile_path() -> Result<String> {

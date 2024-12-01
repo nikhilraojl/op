@@ -17,6 +17,7 @@ impl HelpTrait for MainHelpAction {
         println!("op <project_name> --uri|-u    : Prints remote uri path to stdout");
         println!("op --add|-a <path>            : Adds a path to `.opinclude`");
         println!("op --git-status|-g            : Shows uncommitted and non-sync status of all projects. Ignores git uninitiated or clean");
+        println!("op --fuz|-f <string_str>          : Fuzzy finds and prints projects containing string_str to stdout");
     }
 }
 impl ActionTrait for MainHelpAction {

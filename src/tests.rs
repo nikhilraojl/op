@@ -189,6 +189,7 @@ mod argaction_tests {
         let some_existing_path = "/invalid/path".to_owned();
         let mut args = ["--add".to_owned(), some_existing_path.clone()].into_iter();
         let act = process_arg_command(&mut args).is_ok();
+        println!("{}", act);
         assert!(!act);
 
         // --add --help
