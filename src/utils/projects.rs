@@ -43,7 +43,8 @@ impl Projects {
     pub fn new(config: Config, cli_no_arg: bool) -> Result<Self> {
         let project_root = config.projects_root;
 
-        let mut include_paths = validate_paths(config.include);
+        let include_paths = validate_paths(config.include);
+
         // from configuration `project_root`
         let ignore_path = project_root.join(&config.ignore_dir);
         let mut dir_items = Self::get_list(&project_root, &ignore_path)?;
@@ -55,7 +56,12 @@ impl Projects {
         }
 
         // from the configuration `include`s
-        dir_items.append(&mut include_paths);
+        for path in include_paths.into_iter() {
+            if dir_items.contains(&path) {
+                eprintln!("WARNING: {path:?} is already tracked. Consider removing it from config");
+            }
+            dir_items.push(path)
+        }
 
         dir_items.sort_by(|a, b| {
             let file_a = file_name_lowercase(a);

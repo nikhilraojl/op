@@ -57,6 +57,8 @@ include=/path/to/project_dir
 # add additional `project_dir`s with a new include line
 include=/path/to/project_dir_2
 ```
+> __IMPORTANT__: Be consistent when using path separators. On windows use `\` and on linux use `/`.
+This is currently not enforced and may cause unexpected issues if not followed.
 
 #### Select UI
 `op`: displays all projects as a list which can be navigated and fuzzy searched. Just type to start fuzzy search
