@@ -126,6 +126,14 @@ fn process_arg_command<T: Iterator<Item = String>>(args: &mut T) -> Result<ArgAc
     // we need to have an initial arg to process it
     let arg = args.next().ok_or_else(|| Error::NoArgProvided)?;
 
+    // DEBUG
+    if arg == "combo" {
+        if exec_check::executable_exists("wezterm") {
+            println!("Getting here");
+        }
+        return Ok(ArgAction::MainHelp(MainHelpAction));
+    }
+
     if check_valid_flag(&arg, "help", ShortFlag::Infer)? {
         return Ok(ArgAction::MainHelp(MainHelpAction));
     }
