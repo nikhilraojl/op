@@ -14,7 +14,7 @@ use actions::open_in_nvim::OpAction;
 use actions::opinclude_actions::IncludeAction;
 use error::{Error, Result};
 use utils::constants::{
-    CONFIGFILE_EXTRA_PROJECTS_ROOT, CONFIGFILE_IGNORE_DIR, CONFIGFILE_INCLUDE,
+    CONFIGFILE_COMBINE, CONFIGFILE_EXTRA_PROJECTS_ROOT, CONFIGFILE_IGNORE_DIR, CONFIGFILE_INCLUDE,
     CONFIGFILE_PROJECTS_ROOT,
 };
 use utils::constants::{DEFAULT_IGNORE_DIR, DEFAULT_PROJECTS_ROOT, OP_CONFIG};
@@ -35,9 +35,22 @@ struct Config {
     extra_roots: Vec<PathBuf>,
     ignore_dir: String,
     include: Vec<String>,
+    combine: Vec<[String; 3]>,
 }
 
 impl Config {
+    fn parse_combine_config_option(value: &str) -> Option<[String;3]> {
+        let x = value.split(",").collect::<Vec<_>>();
+        if x.len() != 3 {
+            return None;
+        }
+        let combine_name = x[0].to_owned();
+        let project_1 = x[1].to_owned();
+        let project_2 = x[2].to_owned();
+
+        Some([combine_name, project_1, project_2])
+    }
+
     fn new() -> Result<Self> {
         let home_dir = PathBuf::from(&get_profile_path()?);
         let config_file = home_dir.join(OP_CONFIG);
@@ -47,6 +60,7 @@ impl Config {
             extra_roots: Vec::new(),
             ignore_dir: DEFAULT_IGNORE_DIR.to_owned(),
             include: Vec::new(),
+            combine: Vec::new(),
         };
         if config_file.exists() {
             for line in read_to_string(config_file)?.lines() {
@@ -63,6 +77,11 @@ impl Config {
                         }
                         CONFIGFILE_INCLUDE => {
                             config.include.push(value.to_owned());
+                        }
+                        CONFIGFILE_COMBINE => {
+                            if let Some(x) = Self::parse_combine_config_option(value) {
+                                config.combine.push(x);
+                            }
                         }
                         CONFIGFILE_EXTRA_PROJECTS_ROOT => {
                             config.extra_roots.push(PathBuf::from(value));
@@ -125,14 +144,6 @@ fn run() -> Result<()> {
 fn process_arg_command<T: Iterator<Item = String>>(args: &mut T) -> Result<ArgAction> {
     // we need to have an initial arg to process it
     let arg = args.next().ok_or_else(|| Error::NoArgProvided)?;
-
-    // DEBUG
-    if arg == "combo" {
-        if exec_check::executable_exists("wezterm") {
-            println!("Getting here");
-        }
-        return Ok(ArgAction::MainHelp(MainHelpAction));
-    }
 
     if check_valid_flag(&arg, "help", ShortFlag::Infer)? {
         return Ok(ArgAction::MainHelp(MainHelpAction));

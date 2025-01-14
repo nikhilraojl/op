@@ -69,7 +69,7 @@ pub fn get_profile_path() -> Result<String> {
     }
 }
 
-pub fn validate_paths(paths: Vec<String>) -> Vec<PathBuf> {
+pub fn validate_paths(paths: &Vec<String>) -> Vec<PathBuf> {
     let mut include_paths: Vec<PathBuf> = Vec::new();
     for path in paths {
         let path = PathBuf::from(path);

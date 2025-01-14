@@ -50,6 +50,8 @@ fn parse_windows_path_value(path_value: String) -> io::Result<Vec<String>> {
 
 // TODO: Add linux path value parsing
 
+// TODO: Have good error handling
+
 pub fn executable_exists(exec_name: impl AsRef<str>) -> bool {
     let key = "PATH";
     let exec_name = exec_name.as_ref().to_owned();

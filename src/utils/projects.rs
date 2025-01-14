@@ -17,6 +17,7 @@ pub struct Projects {
     cli_no_arg: bool,
     // for buffered stdout
     buffer_rows: usize,
+    config: Config,
 }
 
 fn file_name_lowercase(file: &PathBuf) -> String {
@@ -41,18 +42,16 @@ impl Projects {
     }
 
     pub fn new(config: Config, cli_no_arg: bool) -> Result<Self> {
-        let project_root = config.projects_root;
-
-        let include_paths = validate_paths(config.include);
+        let include_paths = validate_paths(&config.include);
 
         // from configuration `project_root`
-        let ignore_path = project_root.join(&config.ignore_dir);
-        let mut dir_items = Self::get_list(&project_root, &ignore_path)?;
+        let ignore_path = config.projects_root.join(&config.ignore_dir);
+        let mut dir_items = Self::get_list(&config.projects_root, &ignore_path)?;
 
-        // from the configuration `extra_project_root`s
-        for extra_project_root in config.extra_roots {
+        // from configuration `extra_project_root`s
+        for extra_project_root in &config.extra_roots {
             let ignore_path = extra_project_root.join(&config.ignore_dir);
-            dir_items.extend(Self::get_list(&extra_project_root, &ignore_path)?);
+            dir_items.extend(Self::get_list(extra_project_root, &ignore_path)?);
         }
 
         // from the configuration `include`s
@@ -75,6 +74,7 @@ impl Projects {
             dir_items,
             cli_no_arg,
             buffer_rows: 10,
+            config,
         };
         Ok(projects)
     }
@@ -200,7 +200,43 @@ impl Projects {
         Ok(())
     }
 
+    fn open_project_wezterm_cli(&self, project_name: &String) -> String {
+        let wezterm = Command::new("Wezterm")
+            .arg("cli")
+            .arg("spawn")
+            .arg("--")
+            .arg("op")
+            .arg(project_name)
+            .output()
+            .expect("Wezterm failed executing spawn");
+        String::from_utf8(wezterm.stdout).unwrap()
+    }
+
+    fn open_combined_projects(&self, projects: &[String; 3]) {
+        if exec_check::executable_exists("wezterm") && exec_check::executable_exists("op") {
+            self.open_project_wezterm_cli(&projects[1]);
+            self.open_project_wezterm_cli(&projects[2]);
+        } else {
+            println!("Error: Required program doesn't exist");
+        }
+    }
+
     pub fn open_project_in_nvim(&self, project_name: &str) -> Result<()> {
+        let combined_projects = self
+            .config
+            .combine
+            .iter()
+            .filter(|f| f[0] == project_name)
+            .collect::<Vec<_>>();
+
+        if !combined_projects.is_empty(){
+            // More than length 1 here implies there are duplicates 
+            // in config 
+            // TODO: Try to handle this case
+            self.open_combined_projects(combined_projects[0]);
+            return Ok(());
+        } 
+
         if let Some(proj) = self.matching_project(project_name) {
             println!("Opening project {:?}", project_name);
 
