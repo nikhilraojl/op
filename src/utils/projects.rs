@@ -200,43 +200,51 @@ impl Projects {
         Ok(())
     }
 
-    fn open_project_wezterm_cli(&self, project_name: &String) -> String {
+    fn open_project_wezterm_cli(&self, project_name: &String) -> Result<String> {
+        // opens project in a wezterm new tab
         let wezterm = Command::new("Wezterm")
             .arg("cli")
             .arg("spawn")
             .arg("--")
             .arg("op")
             .arg(project_name)
-            .output()
-            .expect("Wezterm failed executing spawn");
-        String::from_utf8(wezterm.stdout).unwrap()
+            .output()?;
+        String::from_utf8(wezterm.stdout)
+            .map_err(|_| Error::Any("Failed to parse output from 'wezterm spawn'".to_owned()))
     }
 
-    fn open_combined_projects(&self, projects: &[String; 3]) {
+    fn open_compound_projects(&self, projects: &[String; 3]) -> Result<()> {
         if exec_check::executable_exists("wezterm") && exec_check::executable_exists("op") {
-            self.open_project_wezterm_cli(&projects[1]);
-            self.open_project_wezterm_cli(&projects[2]);
-        } else {
-            println!("Error: Required program doesn't exist");
+            self.open_project_wezterm_cli(&projects[1])?;
+            self.open_project_wezterm_cli(&projects[2])?;
+            return Ok(());
         }
+        Err(Error::Any("Required executables missing".to_owned()))
     }
 
     pub fn open_project_in_nvim(&self, project_name: &str) -> Result<()> {
-        let combined_projects = self
+        // Error check
+        exec_check::executable_exists("nvim")
+            .then_some(true)
+            .ok_or(Error::Any("Missing nvim executable".to_owned()))?;
+
+        // `project_name` exists in compound_projects
+        let compound_project_names = self
             .config
-            .combine
+            .compound_projects
             .iter()
             .filter(|f| f[0] == project_name)
             .collect::<Vec<_>>();
 
-        if !combined_projects.is_empty(){
-            // More than length 1 here implies there are duplicates 
-            // in config 
+        if !compound_project_names.is_empty() {
+            // More than length 1 here implies there are duplicates
+            // in config
             // TODO: Try to handle this case
-            self.open_combined_projects(combined_projects[0]);
+            self.open_compound_projects(compound_project_names[0])?;
             return Ok(());
-        } 
+        }
 
+        // `project_name` doesn't exist in compound_projects
         if let Some(proj) = self.matching_project(project_name) {
             println!("Opening project {:?}", project_name);
 
