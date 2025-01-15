@@ -1,16 +1,9 @@
 ## About
 
-A simple program to quickly open projects in neovim. Works on both windows and linux. Written in rust btw.
-
-## Usage
-
-#### Basic
-
-The simplest way to use this program is to run `op <project_dir>` which opens said project in neovim.
-
-You can also just run `op` command and an UI shows up. You can navigate using arrow keys, search by typing and select a project with `enter` to open it with neovim. Use `escape` to exit the UI\
+A simple project management program which can quickly open projects in neovim. Works on both windows and linux. Written in rust btw.\
 ![](./media/op_nvim.png)
 
+## Usage
 **IMPORTANT: Below is the layout expected for this program to run. By default only 'project_dir' level in the layout is detected by this program**
 
 ```
@@ -38,30 +31,8 @@ $HOME
             |- py_ds_kata
 ```
 
-You can configure multiple `Projects` roots and also include additional directories outside of the layout with `.opconfig` in your home folder. Example config below
-
-```ini
-# specifying the base `Projects` location (lines starting with `#` are ignored)
-projects_dir=/path/to/dir
-
-# specifying the extra/additional `Projects`
-extra_projects_root=/differentpath/to/dir
-
-# ignore any `language_dir` level directory (NOTE: shared among all the `Project` roots)
-ignore=/path/to/language_dir
-
-# specify additional `project_dir` which may not be a child of above `projects_dir`
-# but want to be detected by this program anyway
-include=/path/to/project_dir
-
-# add additional `project_dir`s with a new include line
-include=/path/to/project_dir_2
-```
-> __IMPORTANT__: Be consistent when using path separators. On windows use `\` and on linux use `/`.
-This is currently not enforced and may cause unexpected issues if not followed.
-
-#### Select UI
-`op`: displays all projects as a list which can be navigated and fuzzy searched. Just type to start fuzzy search
+### Select UI
+You can just run `op` command and an UI shows up. This displays all projects as a list. Navigate using arrow keys, fuzzy search by typing and select a project with `enter` to open it with neovim. Use `escape` to exit the UI
 
 ```shell
 Find:
@@ -82,7 +53,42 @@ Find:
 - `Enter`: opens selected project in neovim
 - `Ctrl + Backspace`: clear current search
 
-#### Main options
+### Direct
+Another way to use this program is to run `op <project_dir>` which opens said project directly in neovim. Additional CLI options are mentioned below
+
+## Config
+
+You can configure multiple `Projects` roots and also include additional directories outside of the layout with `.opconfig` in your home folder. Example config below
+
+```ini
+# specifying the base `Projects` location (lines starting with `#` are ignored)
+projects_dir=/path/to/dir
+
+# specifying the extra/additional `Projects`
+extra_projects_root=/differentpath/to/dir
+
+# ignore any `language_dir` level directory (NOTE: shared among all the `Project` roots)
+ignore=/path/to/language_dir
+
+# specify additional `project_dir` which may not be a child of above `projects_dir`
+# but want to be detected by this program anyway
+include=/path/to/project_dir
+
+# add additional `project_dir`s with a new include line
+include=/path/to/project_dir_2
+
+# Compound Projects. To open multiple projects in neovim use `compound_projects`
+# Each project is opened in a new wezterm tab
+# compound_project_name: Give a name for this project list
+# project_1_name & project_2_name: Names (not paths) of the projects to open
+# NOTE: requires wezterm to be installed & currently only two are supported
+compound_projects=compound_project_name,project_1_name,project_2_name
+```
+> __IMPORTANT__: Be consistent when using path separators. On windows use `\` and on linux use `/`.
+This is currently not enforced and may cause unexpected issues if not followed.
+
+
+## CLI options
 
 `op [--help|-h]`: shows all available commands & options
 

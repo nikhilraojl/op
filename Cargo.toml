@@ -8,3 +8,5 @@ edition = "2021"
 [dependencies]
 console = "0.15.8"
 walkdir = "2.5.0"
+
+exec_check = { path="./exec_check" }

@@ -5,6 +5,7 @@ pub enum Error {
     StdVar(std::env::VarError),
 
     // crate errors
+    Any(String),
     NoArgProvided,
     NoProjectsFound,
     InvalidArgs,
@@ -15,6 +16,7 @@ pub enum Error {
 impl std::fmt::Display for Error {
     fn fmt(&self, fmt: &mut std::fmt::Formatter) -> std::result::Result<(), std::fmt::Error> {
         match self {
+            Self::Any(err) => write!(fmt, "{err}"),
             Self::Io(err) => write!(fmt, "{err}"),
             Self::StdVar(err) => write!(fmt, "{err}"),
             Self::NoArgProvided => write!(fmt, "No argument provided"),

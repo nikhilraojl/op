@@ -14,8 +14,8 @@ use actions::open_in_nvim::OpAction;
 use actions::opinclude_actions::IncludeAction;
 use error::{Error, Result};
 use utils::constants::{
-    CONFIGFILE_EXTRA_PROJECTS_ROOT, CONFIGFILE_IGNORE_DIR, CONFIGFILE_INCLUDE,
-    CONFIGFILE_PROJECTS_ROOT,
+    CONFIGFILE_COMPOUND_PROJECTS, CONFIGFILE_EXTRA_PROJECTS_ROOT, CONFIGFILE_IGNORE_DIR,
+    CONFIGFILE_INCLUDE, CONFIGFILE_PROJECTS_ROOT,
 };
 use utils::constants::{DEFAULT_IGNORE_DIR, DEFAULT_PROJECTS_ROOT, OP_CONFIG};
 use utils::create_projects_dir;
@@ -35,9 +35,22 @@ struct Config {
     extra_roots: Vec<PathBuf>,
     ignore_dir: String,
     include: Vec<String>,
+    compound_projects: Vec<[String; 3]>,
 }
 
 impl Config {
+    fn parse_compund_projects_config(value: &str) -> Option<[String; 3]> {
+        let x = value.split(",").collect::<Vec<_>>();
+        if x.len() != 3 {
+            return None;
+        }
+        let compound_project_name = x[0].to_owned();
+        let project_1 = x[1].to_owned();
+        let project_2 = x[2].to_owned();
+
+        Some([compound_project_name, project_1, project_2])
+    }
+
     fn new() -> Result<Self> {
         let home_dir = PathBuf::from(&get_profile_path()?);
         let config_file = home_dir.join(OP_CONFIG);
@@ -47,6 +60,7 @@ impl Config {
             extra_roots: Vec::new(),
             ignore_dir: DEFAULT_IGNORE_DIR.to_owned(),
             include: Vec::new(),
+            compound_projects: Vec::new(),
         };
         if config_file.exists() {
             for line in read_to_string(config_file)?.lines() {
@@ -63,6 +77,11 @@ impl Config {
                         }
                         CONFIGFILE_INCLUDE => {
                             config.include.push(value.to_owned());
+                        }
+                        CONFIGFILE_COMPOUND_PROJECTS => {
+                            if let Some(x) = Self::parse_compund_projects_config(value) {
+                                config.compound_projects.push(x);
+                            }
                         }
                         CONFIGFILE_EXTRA_PROJECTS_ROOT => {
                             config.extra_roots.push(PathBuf::from(value));
