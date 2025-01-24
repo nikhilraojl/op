@@ -28,7 +28,7 @@ impl ActionTrait for OpAction {
             if let Some(proj) = projects.matching_project(&self.proj_name) {
                 println!("{}", proj.display());
             } else {
-                println!("No matching projects found. Couldn't switch to project dir'");
+                eprintln!("No matching projects found.");
             }
         } else if self.print_uri {
             let projects = get_projects(config)?;
