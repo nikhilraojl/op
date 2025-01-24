@@ -1,4 +1,3 @@
-use console::Term;
 use std::path::PathBuf;
 use std::process::Command;
 use walkdir::WalkDir;
@@ -12,11 +11,12 @@ use crate::{Config, Result};
 pub struct Projects {
     pub selected_idx: usize,
     pub dir_items: Vec<PathBuf>,
-    pub filtered_items: Vec<PathBuf>,
+    // pub filtered_items: Vec<PathBuf>,
+    pub filtered_items: Vec<String>,
     // to be used for selecting ui i.e running command without any args
     cli_no_arg: bool,
     // for buffered stdout
-    buffer_rows: usize,
+    pub buffer_rows: usize,
     config: Config,
 }
 
@@ -68,9 +68,15 @@ impl Projects {
             file_a.cmp(&file_b)
         });
 
+        let filtered_items = dir_items
+            .clone()
+            .iter()
+            .map(file_name_lowercase)
+            .collect::<Vec<_>>();
+
         let projects = Self {
             selected_idx: 0,
-            filtered_items: dir_items.clone(),
+            filtered_items,
             dir_items,
             cli_no_arg,
             buffer_rows: 10,
@@ -87,17 +93,33 @@ impl Projects {
         }
     }
 
-    pub fn filter_project_list(&mut self, filter_string: &str) -> Vec<(&PathBuf, (bool, i64))> {
+    pub fn filter_project_list(&mut self, filter_string: &str) -> Vec<(String, (bool, i64))> {
         let mut project_list = self
             .dir_items
             .iter()
             .map(|item| {
                 let f_name = file_name_lowercase(item);
                 let fuz = scored_fuzzy_search(filter_string, &f_name);
-                (item, fuz)
+                // (item, fuz)
+                (f_name, fuz)
             })
             .filter(|item| item.1 .0)
             .collect::<Vec<_>>();
+
+        let compound_list = self
+            .config
+            .compound_projects
+            .iter()
+            .map(|item| {
+                let cp_name = item[0].to_lowercase();
+                let fuz = scored_fuzzy_search(filter_string, &cp_name);
+                (cp_name, fuz)
+            })
+            .filter(|item| item.1 .0)
+            .collect::<Vec<_>>();
+
+        project_list.extend(compound_list);
+
         project_list.sort_by(|a, b| {
             let a_fuz = b.1;
             let b_fuz = a.1;
@@ -107,7 +129,7 @@ impl Projects {
     }
 
     pub fn matching_project(&self, project_name: &str) -> Option<&PathBuf> {
-        for proj in &self.filtered_items {
+        for proj in &self.dir_items {
             let matching_project = proj.ends_with(project_name);
             if matching_project {
                 return Some(proj);
@@ -116,7 +138,7 @@ impl Projects {
         None
     }
 
-    fn select_initial(&mut self) {
+    pub fn select_initial(&mut self) {
         self.selected_idx = 0;
     }
     pub fn select_next(&mut self) {
@@ -141,13 +163,13 @@ impl Projects {
                     output.push_str("   ");
                 }
             }
-            if let Some(dir_name) = item.file_name() {
-                let name = dir_name.to_str().expect("Failed to convert OsStr to str");
-                output.push_str(name);
-                if idx < (self.filtered_items.len() - 1) {
-                    output.push('\n');
-                }
+            // if let Some(dir_name) = item.file_name() {
+            //     let name = dir_name.to_str().expect("Failed to convert OsStr to str");
+            output.push_str(item);
+            if idx < (self.filtered_items.len() - 1) {
+                output.push('\n');
             }
+            // }
         }
         output
     }
@@ -173,31 +195,6 @@ impl Projects {
             }
         };
         self.display_fmt(from, upto)
-    }
-
-    pub fn filter_print(&mut self, filter_string: Option<&String>, term: &Term) -> Result<()> {
-        let lines_to_clear = match self.buffer_rows < self.filtered_items.len() {
-            true => self.buffer_rows + 1,
-            false => self.filtered_items.len(),
-        };
-        term.clear_to_end_of_screen()?;
-        term.clear_last_lines(lines_to_clear)?;
-
-        if let Some(filter_string) = filter_string {
-            term.clear_last_lines(1)?; // this is to clear the previous `Find: <>`
-            println!("Find: {filter_string}");
-            self.select_initial();
-            self.filtered_items = self
-                .filter_project_list(filter_string)
-                .into_iter()
-                .map(|v| v.0.to_owned())
-                .collect();
-        }
-
-        if !self.filtered_items.is_empty() {
-            println!("{}", self.select_ui_fmt());
-        }
-        Ok(())
     }
 
     fn open_project_wezterm_cli(&self, project_name: &String) -> Result<String> {

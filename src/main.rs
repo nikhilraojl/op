@@ -105,7 +105,7 @@ enum ArgAction<'a> {
     GetGitStatus(GitStatusAction),
 }
 
-impl<'a> ArgAction<'a> {
+impl ArgAction<'_> {
     fn execute(&self) -> Result<()> {
         let config = Config::new()?;
         match self {
@@ -143,7 +143,7 @@ fn run() -> Result<()> {
 
 fn process_arg_command<T: Iterator<Item = String>>(args: &mut T) -> Result<ArgAction> {
     // we need to have an initial arg to process it
-    let arg = args.next().ok_or_else(|| Error::NoArgProvided)?;
+    let arg = args.next().ok_or(Error::NoArgProvided)?;
 
     if check_valid_flag(&arg, "help", ShortFlag::Infer)? {
         return Ok(ArgAction::MainHelp(MainHelpAction));
