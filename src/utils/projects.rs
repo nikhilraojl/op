@@ -68,11 +68,20 @@ impl Projects {
             file_a.cmp(&file_b)
         });
 
-        let filtered_items = dir_items
+        let mut filtered_items = dir_items
             .clone()
             .iter()
             .map(file_name_lowercase)
             .collect::<Vec<_>>();
+
+        let compound_projects = config
+            .compound_projects
+            .iter()
+            .map(|s| s[0].clone())
+            .collect::<Vec<_>>();
+
+        filtered_items.extend(compound_projects);
+        filtered_items.sort();
 
         let projects = Self {
             selected_idx: 0,
@@ -100,7 +109,6 @@ impl Projects {
             .map(|item| {
                 let f_name = file_name_lowercase(item);
                 let fuz = scored_fuzzy_search(filter_string, &f_name);
-                // (item, fuz)
                 (f_name, fuz)
             })
             .filter(|item| item.1 .0)
@@ -123,9 +131,49 @@ impl Projects {
         project_list.sort_by(|a, b| {
             let a_fuz = b.1;
             let b_fuz = a.1;
-            b_fuz.1.cmp(&a_fuz.1)
+            a_fuz.1.cmp(&b_fuz.1)
         });
         project_list
+    }
+
+    pub fn print_project_path(&self, project_name: &str) -> Option<String> {
+        let mut output = String::new();
+
+        let compound_project_names = self
+            .config
+            .compound_projects
+            .iter()
+            .filter(|f| f[0] == project_name)
+            .collect::<Vec<_>>();
+
+        if !compound_project_names.is_empty() {
+            output.push_str("Compound Project:");
+            output.push('\n');
+            output.push_str("-----------------");
+            output.push('\n');
+
+            for proj in &self.dir_items {
+                if proj.ends_with(&compound_project_names[0][1]) {
+                    output.push_str(&proj.display().to_string());
+                    output.push('\n');
+                };
+                if proj.ends_with(&compound_project_names[0][2]) {
+                    output.push_str(&proj.display().to_string());
+                    output.push('\n');
+                };
+            }
+        } else {
+            for proj in &self.dir_items {
+                let matching_project = proj.ends_with(project_name);
+                if matching_project {
+                    output.push_str(&proj.display().to_string());
+                }
+            }
+        }
+        if output.is_empty() {
+            return None;
+        }
+        return Some(output);
     }
 
     pub fn matching_project(&self, project_name: &str) -> Option<&PathBuf> {
@@ -163,13 +211,10 @@ impl Projects {
                     output.push_str("   ");
                 }
             }
-            // if let Some(dir_name) = item.file_name() {
-            //     let name = dir_name.to_str().expect("Failed to convert OsStr to str");
             output.push_str(item);
             if idx < (self.filtered_items.len() - 1) {
                 output.push('\n');
             }
-            // }
         }
         output
     }

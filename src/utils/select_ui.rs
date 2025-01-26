@@ -39,7 +39,10 @@ pub fn render_loop(config: Config) -> Result<()> {
     let mut filter_string = String::new();
     let term = Term::stdout();
     term.hide_cursor()?;
+
+    println!("Find: ");
     println!("{}", projects.select_ui_fmt());
+
     'main: loop {
         let read_key_raw = term.read_key_raw().expect("Failed to read key");
         match read_key_raw {
