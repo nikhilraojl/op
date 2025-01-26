@@ -25,8 +25,8 @@ impl ActionTrait for OpAction {
             self.print_help();
         } else if self.print_path {
             let projects = get_projects(config)?;
-            if let Some(proj) = projects.matching_project(&self.proj_name) {
-                println!("{}", proj.display());
+            if let Some(proj) = projects.print_project_path(&self.proj_name) {
+                println!("{}", proj.trim());
             } else {
                 eprintln!("No matching projects found.");
             }
