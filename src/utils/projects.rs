@@ -20,13 +20,13 @@ pub struct Projects {
     config: Config,
 }
 
-fn file_name_lowercase(file: &PathBuf) -> String {
+fn get_file_name(file: &PathBuf) -> String {
     let file_name = file
         .file_name()
         .unwrap_or_else(|| panic!("Failed to convert {:?} to OsStr", file))
         .to_str()
         .unwrap_or_else(|| panic!("Failed to convert {:?} to str", file));
-    file_name.to_lowercase()
+    file_name.to_owned()
 }
 
 impl Projects {
@@ -63,15 +63,15 @@ impl Projects {
         }
 
         dir_items.sort_by(|a, b| {
-            let file_a = file_name_lowercase(a);
-            let file_b = file_name_lowercase(b);
+            let file_a = get_file_name(a).to_lowercase();
+            let file_b = get_file_name(b).to_lowercase();
             file_a.cmp(&file_b)
         });
 
         let mut filtered_items = dir_items
             .clone()
             .iter()
-            .map(file_name_lowercase)
+            .map(get_file_name)
             .collect::<Vec<_>>();
 
         let compound_projects = config
@@ -107,8 +107,8 @@ impl Projects {
             .dir_items
             .iter()
             .map(|item| {
-                let f_name = file_name_lowercase(item);
-                let fuz = scored_fuzzy_search(filter_string, &f_name);
+                let f_name = get_file_name(item);
+                let fuz = scored_fuzzy_search(filter_string, &f_name.to_lowercase());
                 (f_name, fuz)
             })
             .filter(|item| item.1 .0)
@@ -138,6 +138,7 @@ impl Projects {
 
     pub fn print_project_path(&self, project_name: &str) -> Option<String> {
         let mut output = String::new();
+        println!("{}", project_name);
 
         let compound_project_names = self
             .config
@@ -173,7 +174,7 @@ impl Projects {
         if output.is_empty() {
             return None;
         }
-        return Some(output);
+        Some(output)
     }
 
     pub fn matching_project(&self, project_name: &str) -> Option<&PathBuf> {
