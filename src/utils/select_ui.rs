@@ -4,18 +4,23 @@ use super::projects::Projects;
 use crate::error::{Error, Result};
 use crate::Config;
 
-// TODO: move select UI related functions from projects to here
-fn filter_print(
-    projects: &mut Projects,
-    filter_string: Option<&String>,
-    term: &Term,
-) -> Result<()> {
+fn clear_prev_screen(projects: &Projects, term: &Term) -> Result<()> {
     let lines_to_clear = match projects.buffer_rows < projects.filtered_items.len() {
         true => projects.buffer_rows + 1,
         false => projects.filtered_items.len(),
     };
     term.clear_to_end_of_screen()?;
     term.clear_last_lines(lines_to_clear)?;
+    Ok(())
+}
+
+// TODO: move select UI related functions from projects to here
+fn filter_print(
+    projects: &mut Projects,
+    filter_string: Option<&String>,
+    term: &Term,
+) -> Result<()> {
+    clear_prev_screen(projects, term)?;
 
     if let Some(filter_string) = filter_string {
         term.clear_last_lines(1)?; // this is to clear the previous `Find: <>`
@@ -85,6 +90,7 @@ pub fn render_loop(config: Config) -> Result<()> {
                 filter_print(&mut projects, Some(&filter_string), &term)?;
             }
             Key::Enter => {
+                clear_prev_screen(&projects, &term)?;
                 select_project(projects)?;
                 break 'main;
             }

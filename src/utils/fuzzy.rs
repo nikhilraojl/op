@@ -1,7 +1,7 @@
 use std::char::ToLowercase;
 use std::cmp::max;
 
-pub fn scored_fuzzy_search<'a>(pattern: &'a str, st: &'a str) -> (bool, i64) {
+pub fn scored_fuzzy_search(pattern: &'_ str, st: &'_ str) -> (bool, i64) {
     // https://github.com/tajmone/fuzzy-search
     // 1:1 port of python implementation in above project
     // Don't know if this can be improved, but works for now.
