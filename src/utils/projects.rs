@@ -138,7 +138,6 @@ impl Projects {
 
     pub fn print_project_path(&self, project_name: &str) -> Option<String> {
         let mut output = String::new();
-        println!("{}", project_name);
 
         let compound_project_names = self
             .config
