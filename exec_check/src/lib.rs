@@ -15,7 +15,7 @@ fn parse_windows_path_value(path_value: String) -> Result<Vec<String>> {
                 let file_name_os = entry?.file_name();
                 if let Ok(file_name_string) = file_name_os.into_string() {
                     if file_name_string.ends_with(".exe") {
-                        // TODO: Unwrapping here as an if check exists
+                        // NOTE: Unwrapping here as an if check exists
                         // fix if there are issues arising
                         let exectuable_name = file_name_string.split_once(".exe").unwrap().0;
                         all_executables.push(exectuable_name.to_owned());
@@ -27,11 +27,29 @@ fn parse_windows_path_value(path_value: String) -> Result<Vec<String>> {
     Ok(all_executables)
 }
 
+fn parse_linux_path_value(path_value: String) -> Result<Vec<String>> {
+    let mut all_executables = Vec::new();
+    for var in path_value.split(':').filter(|v| !v.is_empty()) {
+        let path = PathBuf::from(var);
+        if path.exists() && path.is_dir() {
+            for entry in read_dir(path)? {
+                let file_name_os = entry?.file_name();
+                if let Ok(file_name_string) = file_name_os.into_string() {
+                    all_executables.push(file_name_string);
+                }
+            }
+        }
+
+    }
+    Ok(all_executables)
+}
+
 fn parse_path_value(path_value: String) -> Result<Vec<String>> {
     if cfg!(target_os = "windows") {
         parse_windows_path_value(path_value)
+    } else if cfg!(target_os = "linux"){
+        parse_linux_path_value(path_value)
     } else {
-        // TODO: Add linux path value parsing
         Err(Error::UnSupportedOs)
     }
 }
