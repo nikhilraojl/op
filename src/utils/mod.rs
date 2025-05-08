@@ -65,6 +65,7 @@ pub fn get_profile_path() -> Result<String> {
     match OS {
         "windows" => Ok(std::env::var("userprofile")?),
         "linux" => Ok(std::env::var("HOME")?),
+        "macos" => Ok(std::env::var("HOME")?),
         _ => Err(Error::UnSupportedOS),
     }
 }

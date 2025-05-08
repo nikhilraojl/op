@@ -27,7 +27,7 @@ fn parse_windows_path_value(path_value: String) -> Result<Vec<String>> {
     Ok(all_executables)
 }
 
-fn parse_linux_path_value(path_value: String) -> Result<Vec<String>> {
+fn parse_unix_path_value(path_value: String) -> Result<Vec<String>> {
     let mut all_executables = Vec::new();
     for var in path_value.split(':').filter(|v| !v.is_empty()) {
         let path = PathBuf::from(var);
@@ -48,7 +48,9 @@ fn parse_path_value(path_value: String) -> Result<Vec<String>> {
     if cfg!(target_os = "windows") {
         parse_windows_path_value(path_value)
     } else if cfg!(target_os = "linux"){
-        parse_linux_path_value(path_value)
+        parse_unix_path_value(path_value)
+    } else if cfg!(target_os = "macos") {
+        parse_unix_path_value(path_value)
     } else {
         Err(Error::UnSupportedOs)
     }
